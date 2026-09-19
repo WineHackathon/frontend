@@ -1,0 +1,287 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    background-color: #fefdfa;
+    color: #2c2a28;
+    font-variant-numeric: lining-nums proportional-nums;
+  }
+}
+
+/* Custom scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track {
+  background: #fdf9ed;
+}
+::-webkit-scrollbar-thumb {
+  background: #d7d4d2;
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #8f3d42;
+}
+
+/* vino-svoe.ru exact component styles */
+.svoe-header-pill {
+  background-color: rgba(239, 219, 198, 0.65);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+}
+
+.svoe-card {
+  background-color: #ffffff;
+  border-radius: 28px;
+  border: 1px solid #ebe9e9;
+  box-shadow: 0 2px 12px rgba(44, 42, 40, 0.04);
+}
+
+.svoe-card-cream {
+  background-color: #fdf9ed;
+  border-radius: 28px;
+  border: 1px solid rgba(239, 219, 198, 0.8);
+}
+
+.svoe-chip {
+  background-color: rgba(253, 249, 237, 0.8);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  border-radius: 999px;
+  color: #2c2a28;
+  transition: all 0.2s ease-in-out;
+}
+
+.svoe-chip:hover {
+  background-color: #f8ecc9;
+}
+
+.svoe-chip-active {
+  background-color: #8f3d42;
+  color: #ffffff;
+  border-color: #8f3d42;
+}
+
+.svoe-btn-primary {
+  background-color: #8f3d42;
+  color: #ffffff;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: background-color 0.25s ease-in, transform 0.15s ease-out;
+}
+
+.svoe-btn-primary:hover {
+  background-color: #ab494f;
+}
+
+.svoe-btn-primary:active {
+  background-color: #723135;
+  transform: scale(0.98);
+}
+
+.svoe-btn-secondary {
+  background-color: #f9f1f1;
+  color: #8f3d42;
+  border-radius: 999px;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+
+.svoe-btn-secondary:hover {
+  background-color: #edd4d6;
+}
+
+.svoe-modal {
+  background-color: #fefdfa;
+  border-radius: 32px;
+  border: 1px solid #efdbc6;
+  box-shadow: 0 24px 60px rgba(44, 42, 40, 0.15);
+}
+
+/* vino-svoe.ru authentic wine page classes */
+.wine-main-title-block__title {
+  color: #2c2a28;
+  font-family: 'Playfair Display', serif;
+  font-size: 32px;
+  font-style: normal;
+  font-weight: 500;
+  line-height: 125%;
+}
+
+@media (min-width: 768px) {
+  .wine-main-title-block__title {
+    font-size: 40px;
+  }
+}
+
+.wine-main-title-block__manufacturer {
+  margin: 0 0 12px;
+  font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 150%;
+  color: #857e79;
+}
+
+.wine-main-title-block__rating_public {
+  background-color: #f8ecc9;
+  border: none;
+  border-radius: 999px;
+  padding: 6px 14px;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.wine-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.wine-detail-info__detail {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.wine-detail-info__detail-image {
+  background: #ffffff;
+  border: 2px solid #ffffff;
+  border-radius: 16px;
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 6px rgba(190, 159, 75, 0.12), 0 1px 3px rgba(190, 159, 75, 0.08);
+}
+
+.wine-detail-info__detail-content {
+  flex: 1;
+  padding-top: 2px;
+}
+
+.wine-detail-info__detail-label {
+  color: #857e79;
+  font-size: 11px;
+  line-height: 125%;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-weight: 500;
+  margin: 0;
+}
+
+.wine-detail-info__detail-value {
+  color: #2c2a28;
+  font-size: 15px;
+  line-height: 140%;
+  font-weight: 500;
+  margin: 0;
+}
+
+.wine-dish-item {
+  background: rgba(255, 255, 255, 0.85);
+  border: 1px solid #efdbc6;
+  border-radius: 18px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  min-height: 120px;
+  padding: 12px 10px;
+  transition: all 0.25s ease-out;
+  display: flex;
+}
+
+.wine-dish-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(143, 61, 66, 0.08);
+}
+
+.wine-dish-item__image {
+  object-fit: cover;
+  border-radius: 999px;
+  width: 64px;
+  height: 64px;
+  border: 2px solid #ffffff;
+  box-shadow: 0 2px 8px rgba(44, 42, 40, 0.08);
+}
+
+.wine-dish-item__name {
+  color: #2c2a28;
+  text-align: center;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 13px;
+  max-width: 100%;
+  margin: 0;
+}
+
+.wine-dishes-list {
+  gap: 12px;
+  display: flex;
+  overflow-x: auto;
+  padding-bottom: 6px;
+}
+
+.wine-dishes-list-icon {
+  color: #ffffff;
+  background-color: #8f3d42;
+  border-radius: 50%;
+  flex-shrink: 0;
+  justify-content: center;
+  align-items: center;
+  width: 44px;
+  height: 44px;
+  display: flex;
+}
+
+.wine-dishes-list-label {
+  color: #2c2a28;
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* Bottle Scanner Viewfinder Animations */
+@keyframes laserSweep {
+  0% {
+    top: 6%;
+    opacity: 0.3;
+  }
+  50% {
+    top: 92%;
+    opacity: 1;
+  }
+  100% {
+    top: 6%;
+    opacity: 0.3;
+  }
+}
+
+.animate-laser-vino {
+  animation: laserSweep 2.2s ease-in-out infinite;
+}
+
+/* Pulsing radar for sommelier button */
+@keyframes sommelierPillPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 1px 2px rgba(108, 85, 15, 0.1), 0 4px 4px rgba(108, 85, 15, 0.05), 0 0 20px rgba(108, 85, 15, 0.15);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(143, 61, 66, 0.25), 0 0 25px rgba(143, 61, 66, 0.2);
+  }
+}
+
+.animate-sommelier-pill {
+  animation: sommelierPillPulse 3s infinite ease-in-out;
+}
+
