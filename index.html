@@ -260,7 +260,7 @@
       const startTime = performance.now();
 
       try {
-        const response = await fetch("http://localhost:8080/v1/eval/predict", {
+        const response = await fetch("/v1/eval/predict", {
           method: "POST",
           body: formData,
         });
@@ -292,7 +292,7 @@
 
     async function loadWineCard(slug) {
       try {
-        const res = await fetch(`http://localhost:8080/api/v1/catalog/wines/${slug}`);
+        const res = await fetch(`/api/v1/catalog/wines/${slug}`);
         if (!res.ok) return;
         const wine = await res.json();
 
@@ -337,7 +337,7 @@
       container.scrollTop = container.scrollHeight;
 
       try {
-        const resp = await fetch("http://localhost:8080/api/v1/sommelier/chat", {
+        const resp = await fetch("/api/v1/sommelier/chat", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
@@ -356,7 +356,7 @@
 
     async function loginWithYandex() {
       try {
-        const res = await fetch("http://localhost:8080/api/v1/auth/yandex/url");
+        const res = await fetch("/api/v1/auth/yandex/url");
         const data = await res.json();
         if (data.authorization_url) {
           window.location.href = data.authorization_url;
