@@ -296,12 +296,14 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
                   </div>
 
                   {/* Price */}
-                  <div className="flex items-baseline space-x-1">
-                    <span className="text-xs text-[#857e79]">цена:</span>
-                    <span className="font-serif font-bold text-2xl text-[#8f3d42]">
-                      ~{wine.price_rub || '1 450'} ₽
-                    </span>
-                  </div>
+                  {wine.price_rub ? (
+                    <div className="flex items-baseline space-x-1">
+                      <span className="text-xs text-[#857e79]">цена:</span>
+                      <span className="font-serif font-bold text-2xl text-[#8f3d42]">
+                        ~{wine.price_rub} ₽
+                      </span>
+                    </div>
+                  ) : null}
 
                 </div>
 
@@ -617,12 +619,14 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
         {/* Footer Actions: Exact vino-svoe.ru Primary & Secondary buttons */}
         <div className="p-4 sm:p-5 bg-[#fdf9ed] border-t border-[#efdbc6] flex flex-wrap items-center justify-between gap-3">
           
-          <div className="flex items-baseline space-x-2">
-            <span className="text-xs text-[#857e79]">Ориентир цены:</span>
-            <span className="font-serif font-bold text-xl text-[#8f3d42]">
-              ~{wine.price_rub || '1 450'} ₽
-            </span>
-          </div>
+          {wine.price_rub ? (
+            <div className="flex items-baseline space-x-2">
+              <span className="text-xs text-[#857e79]">Ориентир цены:</span>
+              <span className="font-serif font-bold text-xl text-[#8f3d42]">
+                ~{wine.price_rub} ₽
+              </span>
+            </div>
+          ) : <div />}
 
           <div className="flex items-center space-x-3 flex-1 sm:flex-initial justify-end">
             {/* Wishlist Button */}

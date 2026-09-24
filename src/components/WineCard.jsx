@@ -11,31 +11,27 @@ export default function WineCard({ wine, onSelect }) {
     >
       <div className="flex items-start space-x-3.5">
         {/* Wine thumbnail image or bottle icon */}
-        <div className="w-16 h-24 rounded-2xl bg-[#fdf9ed] border border-[#efdbc6] overflow-hidden flex-shrink-0 relative flex items-center justify-center">
+        <div className="w-16 h-28 rounded-2xl bg-[#fdf9ed] border border-[#efdbc6] overflow-hidden flex-shrink-0 relative flex items-center justify-center p-1.5 shadow-inner">
           {wine.image_url ? (
             <img
               src={wine.image_url}
               alt={wine.name}
-              className="w-full h-full object-cover group-hover:scale-105 transition duration-300"
+              className="w-full h-full object-contain group-hover:scale-105 transition duration-300 drop-shadow-md"
             />
           ) : (
             <Wine className="w-8 h-8 text-[#8f3d42]" />
           )}
-          {/* Category tag pill on image */}
-          <span className="absolute bottom-1 inset-x-1 bg-[#2c2a28]/85 text-[8.5px] text-center font-bold text-white py-0.5 rounded-md uppercase tracking-tight">
-            {wine.category}
-          </span>
         </div>
 
         {/* Content & Details */}
         <div className="flex-1 min-w-0">
           <div className="flex items-center justify-between">
-            <span className="text-[10.5px] text-[#8f3d42] font-semibold uppercase tracking-wider">
-              {wine.sugar_type || 'Сухое'} {wine.vintage_year ? `• ${wine.vintage_year}` : ''}
+            <span className="text-[10.5px] text-[#8f3d42] font-semibold uppercase tracking-wider truncate">
+              {wine.category ? `${wine.category} • ` : ''}{wine.sugar_type || 'Сухое'} {wine.vintage_year ? `• ${wine.vintage_year}` : ''}
             </span>
             {/* Roskachestvo rating badge (exact vino-svoe.ru wine-item-rating) */}
             {wine.roskachestvo_score && (
-              <div className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-[#f8ecc9] text-[#8f3d42] shadow-sm">
+              <div className="flex items-center space-x-1 px-2.5 py-0.5 rounded-full bg-[#f8ecc9] text-[#8f3d42] shadow-sm flex-shrink-0 ml-1">
                 <Award className="w-3 h-3 text-[#dfa838]" />
                 <span className="font-sans text-[11px] font-bold text-[#2c2a28]">{wine.roskachestvo_score}</span>
               </div>
@@ -54,10 +50,12 @@ export default function WineCard({ wine, onSelect }) {
 
           {/* Price & Grape Variety */}
           <div className="flex items-center justify-between mt-1.5 pt-1.5 border-t border-[#ebe9e9] text-xs">
-            <span className="font-serif font-bold text-sm text-[#2c2a28]">
-              {wine.price_rub ? `${wine.price_rub} ₽` : '1 150 ₽'}
-            </span>
-            <span className="text-[10px] text-[#857e79] font-medium max-w-[140px] truncate">
+            {wine.price_rub ? (
+              <span className="font-serif font-bold text-sm text-[#2c2a28]">
+                {wine.price_rub} ₽
+              </span>
+            ) : null}
+            <span className={`text-[10px] text-[#857e79] font-medium truncate ${!wine.price_rub ? 'w-full' : 'max-w-[140px]'}`}>
               {(wine.grape_varieties || [])[0] || 'Классический купаж'}
             </span>
           </div>
