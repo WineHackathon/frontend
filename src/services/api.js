@@ -49,6 +49,8 @@ export function decrementGuestScans() {
   return next;
 }
 
+const API_BASE = (import.meta.env.VITE_API_URL || '').replace(/\/$/, '');
+
 // Вспомогательная функция запросов к бэкенду
 async function apiRequest(endpoint, options = {}) {
   const token = getAuthToken();
@@ -63,7 +65,8 @@ async function apiRequest(endpoint, options = {}) {
     headers['Authorization'] = `Bearer ${token}`;
   }
 
-  const response = await fetch(endpoint, {
+  const url = endpoint.startsWith('http') ? endpoint : `${API_BASE}${endpoint}`;
+  const response = await fetch(url, {
     ...options,
     headers,
   });
@@ -202,7 +205,7 @@ export const api = {
   // 5. Авторизация (Email + Password)
   async login(email, password) {
     try {
-      const resp = await fetch('/api/v1/auth/login', {
+      const resp = await apiRequest('/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -248,7 +251,7 @@ export const api = {
   // 6. Регистрация нового пользователя с передачей device_fingerprint
   async register(email, password, firstName, lastName = '') {
     try {
-      const resp = await fetch('/api/v1/auth/register', {
+      const resp = await apiRequest('/api/v1/auth/register', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -297,7 +300,7 @@ export const api = {
   // 7. Авторизация через Яндекс ID OAuth
   async authYandex(code) {
     try {
-      const resp = await fetch('/api/v1/auth/yandex', {
+      const resp = await apiRequest('/api/v1/auth/yandex', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -322,7 +325,7 @@ export const api = {
 
   async getYandexAuthUrl() {
     try {
-      const resp = await fetch('/api/v1/auth/yandex/url');
+      const resp = await apiRequest('/api/v1/auth/yandex/url');
       if (resp.ok) {
         const data = await resp.json();
         return data.url;

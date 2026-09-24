@@ -96,8 +96,14 @@ export class SommelierWebSocketClient {
     const token = getAuthToken();
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     
-    // Проксируется через Vite или Nginx на порт 8050 / 8080
-    const wsUrl = `${protocol}//${window.location.host}/ws/sommelier${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+    // Поддержка явного VITE_WS_URL или автоопределение через текущий хост (Vite/Nginx proxy)
+    const envWsUrl = import.meta.env.VITE_WS_URL;
+    let wsUrl;
+    if (envWsUrl) {
+      wsUrl = `${envWsUrl.replace(/\/$/, '')}/ws/sommelier${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+    } else {
+      wsUrl = `${protocol}//${window.location.host}/ws/sommelier${token ? `?token=${encodeURIComponent(token)}` : ''}`;
+    }
 
     try {
       this.ws = new WebSocket(wsUrl);
