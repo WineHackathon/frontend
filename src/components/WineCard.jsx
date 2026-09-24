@@ -1,7 +1,7 @@
 import React from 'react';
 import { Wine, Award, ChevronRight } from 'lucide-react';
 
-export default function WineCard({ wine, onSelect }) {
+export default function WineCard({ wine, onSelect, onImageLoad }) {
   if (!wine) return null;
 
   return (
@@ -16,6 +16,7 @@ export default function WineCard({ wine, onSelect }) {
             <img
               src={wine.image_url.split('?')[0]}
               alt=""
+              onLoad={() => onImageLoad && onImageLoad()}
               onError={(e) => {
                 e.currentTarget.style.display = 'none';
                 const icon = e.currentTarget.parentElement?.querySelector('.fallback-wine-icon');

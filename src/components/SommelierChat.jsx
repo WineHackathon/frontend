@@ -13,11 +13,15 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
   const [isTyping, setIsTyping] = useState(false);
   const wsClientRef = useRef(null);
   const chatScrollRef = useRef(null);
+  const messagesEndRef = useRef(null);
   const pendingPromptRef = useRef(null);
 
   const isAuth = !!getAuthToken();
 
-  const scrollToBottom = () => {
+  const scrollToBottom = (behavior = 'smooth') => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior, block: 'end' });
+    }
     if (chatScrollRef.current) {
       chatScrollRef.current.scrollTop = chatScrollRef.current.scrollHeight;
     }
@@ -153,8 +157,16 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
   }, [isAuth]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, currentQuestion]);
+    scrollToBottom('smooth');
+    const t1 = setTimeout(() => scrollToBottom('smooth'), 80);
+    const t2 = setTimeout(() => scrollToBottom('smooth'), 250);
+    const t3 = setTimeout(() => scrollToBottom('smooth'), 500);
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+    };
+  }, [messages, currentQuestion, isTyping]);
 
   const handleAnswerSelect = (option) => {
     if (!currentQuestion || !wsClientRef.current) return;
@@ -297,6 +309,7 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
                         key={cIdx}
                         wine={c}
                         onSelect={onSelectWine}
+                        onImageLoad={() => scrollToBottom('smooth')}
                       />
                     ))}
                   </div>
@@ -359,6 +372,9 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
               </div>
             </div>
           )}
+
+          {/* Scroll anchor to guarantee scrolling down to the very end */}
+          <div ref={messagesEndRef} className="h-1 w-full shrink-0" />
         </div>
 
         {/* Quick Suggestion Pills (Gastropairing & Retake preferences) */}
@@ -366,7 +382,7 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
           <div className="flex items-center space-x-2 overflow-x-auto py-2 px-3 no-scrollbar border-t border-[#efdbc6]/60 bg-[#fdfbf7] flex-shrink-0">
             <button
               type="button"
-              onClick={() => handleSendSuggestion('Подбери красное вино к стейку из говядины')}
+              onClick={() => handleSendSuggestion('Подбери вино к стейку под мой вкус')}
               className="whitespace-nowrap px-3 py-1 rounded-full bg-white hover:bg-[#f8ecc9] border border-[#efdbc6] text-[11px] font-medium text-[#2c2a28] hover:text-[#8f3d42] transition shadow-xs active:scale-95 flex items-center space-x-1"
             >
               <span>🥩</span>
