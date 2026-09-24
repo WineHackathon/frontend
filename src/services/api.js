@@ -24,8 +24,15 @@ export function setAuthToken(token) {
 }
 
 export function getStoredUser() {
-  const data = localStorage.getItem('wine_user_profile');
-  return data ? JSON.parse(data) : null;
+  try {
+    const data = localStorage.getItem('wine_user_profile');
+    if (!data || data === 'undefined' || data === 'null') return null;
+    return JSON.parse(data);
+  } catch (e) {
+    console.warn('Invalid stored user in localStorage, clearing:', e);
+    localStorage.removeItem('wine_user_profile');
+    return null;
+  }
 }
 
 export function setStoredUser(user) {
