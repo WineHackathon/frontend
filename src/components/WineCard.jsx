@@ -14,13 +14,17 @@ export default function WineCard({ wine, onSelect }) {
         <div className="w-16 h-28 rounded-2xl bg-[#fdf9ed] border border-[#efdbc6] overflow-hidden flex-shrink-0 relative flex items-center justify-center p-1.5 shadow-inner">
           {wine.image_url ? (
             <img
-              src={wine.image_url}
-              alt={wine.name}
+              src={wine.image_url.split('?')[0]}
+              alt=""
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+                const icon = e.currentTarget.parentElement?.querySelector('.fallback-wine-icon');
+                if (icon) icon.classList.remove('hidden');
+              }}
               className="w-full h-full object-contain group-hover:scale-105 transition duration-300 drop-shadow-md"
             />
-          ) : (
-            <Wine className="w-8 h-8 text-[#8f3d42]" />
-          )}
+          ) : null}
+          <Wine className={`w-8 h-8 text-[#8f3d42] fallback-wine-icon ${wine.image_url ? 'hidden' : ''}`} />
         </div>
 
         {/* Content & Details */}

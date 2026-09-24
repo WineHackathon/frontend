@@ -27,10 +27,12 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
   const [cellarStatus, setCellarStatus] = useState(null); // 'in_cellar' | 'wishlist' | null
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('characteristics'); // 'characteristics' | 'taste' | 'gastronomy'
+  const [imgFailed, setImgFailed] = useState(false);
 
   const isAuth = !!getAuthToken();
 
   useEffect(() => {
+    setImgFailed(false);
     if (!wine) {
       setCellarStatus(null);
       setAddedStatus(null);
@@ -241,10 +243,11 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
                   {/* Subtle pedestal circular shadow */}
                   <div className="absolute bottom-2 w-32 h-6 bg-[#2c2a28]/10 rounded-[100%] blur-md"></div>
                   
-                  {wine.image_url ? (
+                  {wine.image_url && !imgFailed ? (
                     <img
-                      src={wine.image_url}
-                      alt={wine.name}
+                      src={wine.image_url.split('?')[0]}
+                      alt=""
+                      onError={() => setImgFailed(true)}
                       className="h-full object-contain filter drop-shadow-md z-10 transition-transform duration-500 hover:scale-105"
                     />
                   ) : (
