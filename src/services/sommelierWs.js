@@ -4,10 +4,11 @@ import { getAuthToken } from './api';
 /**
  * Сервис управления WebSocket-сессией AI-Сомелье (/ws/sommelier).
  * Поддерживает:
- * - Реальное WebSocket соединение с автопереподключением;
- * - Интерактивный 5-вопросный онбординг + адаптивные вопросы (Схема 2);
- * - Свободный чат с сомелье и RAG;
- * - Автономный/демо эмулятор на случай, если бэкенд выключен или недоступен.
+ * - Реальное WebSocket соединение с автопереподключением и фоллбэками на порты;
+ * - Интерактивный 5-вопросный адаптивный онбординг (Схема 1 и 2);
+ * - Двухфазный стриминг (Фаза 1: candidates_ready, Фаза 2: stream_chunk);
+ * - Защиту и пейволл неавторизованных пользователей;
+ * - Автономный эмулятор для стабильной разработки при выключенном бэкенде.
  */
 
 // Базовые 5 вопросов «Оптимального первого диалога» сомелье
@@ -43,25 +44,36 @@ export const BASELINE_QUESTIONS = [
   {
     step: 5,
     code: 'aromas',
-    question: 'Какие ароматы вам нравятся больше всего?',
+    question: 'Какие ароматы нравятся?',
     options: [
       'Спелые ягоды и вишня',
       'Цитрусы и зеленое яблоко',
-      'Ваниль, дуб и шоколад',
-      'Полевые цветы и минералы'
+      'Ваниль, дуб и пряности',
+      'Полевые цветы и минералы',
+      'Редкие и необычные вкусы (автохтоны, петнаты)'
     ],
     adaptive: false
   }
 ];
 
 export class SommelierWebSocketClient {
-  constructor({ onMessage, onQuestion, onCompleted, onRegistrationRequired, onStatusChange }) {
+  constructor({
+    onMessage,
+    onQuestion,
+    onCompleted,
+    onCandidatesReady,
+    onRegistrationRequired,
+    onStatusChange,
+    onAuthSuccess,
+  }) {
     this.ws = null;
     this.onMessage = onMessage || (() => {});
     this.onQuestion = onQuestion || (() => {});
     this.onCompleted = onCompleted || (() => {});
+    this.onCandidatesReady = onCandidatesReady || (() => {});
     this.onRegistrationRequired = onRegistrationRequired || (() => {});
     this.onStatusChange = onStatusChange || (() => {});
+    this.onAuthSuccess = onAuthSuccess || (() => {});
 
     this.isConnecting = false;
     this.isConnected = false;
@@ -83,19 +95,20 @@ export class SommelierWebSocketClient {
 
     const token = getAuthToken();
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-    // Проксируется через Nginx порт 8050 или Vite дев-сервер
-    const wsUrl = `${protocol}//${window.location.host}/ws/sommelier${token ? `?token=${token}` : ''}`;
+    
+    // Проксируется через Vite или Nginx на порт 8050 / 8080
+    const wsUrl = `${protocol}//${window.location.host}/ws/sommelier${token ? `?token=${encodeURIComponent(token)}` : ''}`;
 
     try {
       this.ws = new WebSocket(wsUrl);
 
-      // Таймаут на попытку подключения: если за 2.5 сек не открылся — переходим в интеллектуальный эмулятор
+      // Таймаут на попытку подключения к сокету бэкенда (2.8 сек)
       const connectTimeout = setTimeout(() => {
         if (!this.isConnected) {
-          console.info('[Sommelier WS] Backend WebSocket недоступен, включен интерактивный эмулятор');
+          console.info('[Sommelier WS] Backend WebSocket недоступен, включен интеллектуальный эмулятор');
           this.initMockMode();
         }
-      }, 2500);
+      }, 2800);
 
       this.ws.onopen = () => {
         clearTimeout(connectTimeout);
@@ -103,14 +116,14 @@ export class SommelierWebSocketClient {
         this.isConnecting = false;
         this.useMock = false;
         this.onStatusChange('connected');
-        console.log('[Sommelier WS] Успешно подключено к /ws/sommelier');
+        console.log('[Sommelier WS] Успешно подключено к /ws/sommelier бэкенда');
 
-        // Отправка auth токена в сокет (для бэкенда)
+        // Отправка auth токена в сокет
         if (token) {
-          this.ws.send(JSON.stringify({ type: 'auth', token }));
+          this.authenticate(token);
         }
 
-        // Запуск heartbeat
+        // Heartbeat каждые 20 сек
         this.pingInterval = setInterval(() => {
           if (this.ws && this.ws.readyState === WebSocket.OPEN) {
             this.ws.send(JSON.stringify({ type: 'ping' }));
@@ -147,6 +160,12 @@ export class SommelierWebSocketClient {
     }
   }
 
+  authenticate(token) {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN && token) {
+      this.ws.send(JSON.stringify({ type: 'auth', token }));
+    }
+  }
+
   initMockMode() {
     this.useMock = true;
     this.isConnected = true;
@@ -176,18 +195,37 @@ export class SommelierWebSocketClient {
       }
     } else if (type === 'next_question') {
       this.onQuestion(data.question);
-    } else if (type === 'completed') {
+    } else if (type === 'candidates_ready') {
+      // Бэкенд Фаза 1: мгновенные карточки (15-20 мс) до начала стриминга текста
+      this.onCandidatesReady(data.candidates || []);
+    } else if (type === 'completed' || type === 'onboarding_complete') {
       this.onCompleted({
         message: data.message,
         candidates: data.candidates || [],
-        registration_prompt: data.registration_prompt,
+        registration_required: data.registration_required,
+        registration_prompt: data.registration_required
+          ? 'Зарегистрируйтесь или войдите, чтобы увидеть персональные рекомендации и сохранить вкусовой радар!'
+          : null,
       });
-    } else if (type === 'message') {
-      this.onMessage({
-        role: 'assistant',
-        content: data.content,
-        candidates: data.candidates || [],
-      });
+      if (data.registration_required) {
+        this.onRegistrationRequired({
+          title: 'Сохранить винные рекомендации',
+          subtitle: data.message || 'Превосходно! Ваш вкусовой профиль сформирован. Зарегистрируйтесь, чтобы получить персональные винные рекомендации.',
+        });
+      }
+    } else if (type === 'message' || type === 'chat') {
+      if (data.registration_required) {
+        this.onRegistrationRequired({
+          title: 'Авторизуйтесь для общения с сомелье',
+          subtitle: data.content || data.reply || 'Чтобы получить персональную рекомендацию от AI-сомелье, пожалуйста, войдите или зарегистрируйтесь.',
+        });
+      } else {
+        this.onMessage({
+          role: 'assistant',
+          content: data.content || data.reply,
+          candidates: data.candidates || [],
+        });
+      }
     } else if (type === 'stream_chunk') {
       this.onMessage({
         role: 'assistant',
@@ -199,6 +237,9 @@ export class SommelierWebSocketClient {
         streamEnd: true,
         candidates: data.candidates || [],
       });
+    } else if (type === 'auth_success') {
+      console.log('[Sommelier WS] Успешно авторизован:', data.user_id);
+      this.onAuthSuccess(data);
     }
   }
 
@@ -216,7 +257,7 @@ export class SommelierWebSocketClient {
       return;
     }
 
-    // Эмуляция адаптивного сценария (Схема 2)
+    // Эмуляция адаптивного сценария при выключенном бэкенде (Схема 1 и 2)
     setTimeout(() => {
       if (step < 5) {
         const nextStep = step + 1;
@@ -247,16 +288,29 @@ export class SommelierWebSocketClient {
 
         this.onQuestion(nextQuestion);
       } else {
-        // Подбор вин по результатам
+        const isAuth = !!getAuthToken();
         const cat = this.answers['category'] || 'Красное';
         let filtered = MOCK_WINES.filter(w => w.category.toLowerCase().includes(cat.toLowerCase()));
         if (filtered.length === 0) filtered = MOCK_WINES;
 
-        this.onCompleted({
-          message: `Великолепно! Ваш вкусовой профиль сформирован. На основе ваших предпочтений (${cat}, ${this.answers['sweetness'] || ''}) я подобрал лучшие российские образцы:`,
-          candidates: filtered.slice(0, 3),
-          registration_prompt: 'Зарегистрируйтесь, чтобы сохранить эти вина в личный погреб и отслеживать персональный вкусовой радар!'
-        });
+        if (!isAuth) {
+          this.onCompleted({
+            message: `Превосходно! Ваш вкусовой профиль сформирован (${cat}, ${this.answers['sweetness'] || 'Сухое'}). Зарегистрируйтесь, чтобы получить персональные винные рекомендации.`,
+            candidates: [],
+            registration_required: true,
+            registration_prompt: 'Зарегистрируйтесь, чтобы сохранить эти вина в личный погреб и отслеживать персональный вкусовой радар!'
+          });
+          this.onRegistrationRequired({
+            title: 'Сохранить винный профиль',
+            subtitle: 'Ваш вкусовой радар готов! Зарегистрируйтесь, чтобы открыть подборку вин и сохранить её в личный погреб.'
+          });
+        } else {
+          this.onCompleted({
+            message: `Великолепно! Ваш вкусовой профиль сформирован. На основе ваших предпочтений (${cat}, ${this.answers['sweetness'] || 'Сухое'}) я подобрал лучшие российские образцы:`,
+            candidates: filtered.slice(0, 3),
+            registration_required: false,
+          });
+        }
       }
     }, 400);
   }
@@ -268,7 +322,7 @@ export class SommelierWebSocketClient {
     // Схема 3: Для неавторизованных просим пройти регистрацию
     if (!isAuth) {
       this.onRegistrationRequired({
-        prompt: 'Цифровой сомелье доступен для общения в свободном диалоге только зарегистрированным пользователям. Пожалуйста, авторизуйтесь или войдите в аккаунт!',
+        prompt: 'Свободный диалог с AI-сомелье доступен только зарегистрированным пользователям. Пожалуйста, авторизуйтесь или войдите в аккаунт!',
         query: text,
       });
       return;
@@ -277,9 +331,9 @@ export class SommelierWebSocketClient {
     if (!this.useMock && this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify({
         type: 'message',
-        message: text,
+        content: text,
         context_wine_slug: contextWineSlug,
-        stream: false,
+        stream: true,
       }));
       return;
     }
@@ -298,7 +352,7 @@ export class SommelierWebSocketClient {
         reply = 'К морепродуктам и белой рыбе идеально подойдет терруарное белое вино с яркой кислотностью и морской минеральностью — Усадьба Дивноморское Восточный Склон.';
       } else {
         matchedWines = [MOCK_WINES[0], MOCK_WINES[1], MOCK_WINES[3]];
-        reply = `Отличный вопрос! Российское виноделие сейчас на пике развития. Вот интересные рекомендации из нашего проверенного каталога Роскачества:`;
+        reply = 'Отличный вопрос! Российское виноделие сейчас на пике развития. Вот интересные рекомендации из нашего проверенного каталога Роскачества:';
       }
 
       this.onMessage({

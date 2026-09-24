@@ -34,10 +34,60 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
     const client = new SommelierWebSocketClient({
       onMessage: (msg) => {
         setIsTyping(false);
-        setMessages((prev) => [...prev, msg]);
+        if (msg.chunk) {
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (last && last.role === 'assistant' && last.isStreaming) {
+              const updated = [...prev];
+              updated[updated.length - 1] = {
+                ...last,
+                content: (last.content || '') + msg.chunk,
+              };
+              return updated;
+            } else {
+              return [
+                ...prev,
+                { role: 'assistant', content: msg.chunk, isStreaming: true, candidates: [] },
+              ];
+            }
+          });
+        } else if (msg.streamEnd) {
+          setMessages((prev) => {
+            const updated = [...prev];
+            const last = updated[updated.length - 1];
+            if (last && last.role === 'assistant') {
+              updated[updated.length - 1] = {
+                ...last,
+                isStreaming: false,
+                candidates: (msg.candidates && msg.candidates.length > 0) ? msg.candidates : (last.candidates || []),
+              };
+            }
+            return updated;
+          });
+        } else {
+          setMessages((prev) => [...prev, msg]);
+        }
+        scrollToBottom();
+      },
+      onCandidatesReady: (candidates) => {
+        setIsTyping(false);
+        setMessages((prev) => {
+          const last = prev[prev.length - 1];
+          if (last && last.role === 'assistant' && last.isStreaming) {
+            const updated = [...prev];
+            updated[updated.length - 1] = { ...last, candidates };
+            return updated;
+          } else {
+            return [
+              ...prev,
+              { role: 'assistant', content: '', isStreaming: true, candidates },
+            ];
+          }
+        });
         scrollToBottom();
       },
       onQuestion: (q) => {
+        setIsTyping(false);
         setCurrentQuestion(q);
         scrollToBottom();
       },
@@ -49,7 +99,7 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
           {
             role: 'assistant',
             content: data.message,
-            candidates: data.candidates,
+            candidates: data.candidates || [],
             registration_prompt: data.registration_prompt,
           }
         ]);
@@ -64,6 +114,9 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
       },
       onStatusChange: (status) => {
         setConnectionStatus(status);
+      },
+      onAuthSuccess: (data) => {
+        console.log('[SommelierChat] Сокет авторизован:', data.user_id);
       }
     });
 
@@ -74,6 +127,14 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
       client.disconnect();
     };
   }, [isOpen]);
+
+  // При изменении статуса авторизации (вход через модалку) отправляем токен в открытый сокет
+  useEffect(() => {
+    const token = getAuthToken();
+    if (token && wsClientRef.current) {
+      wsClientRef.current.authenticate(token);
+    }
+  }, [isAuth]);
 
   useEffect(() => {
     scrollToBottom();

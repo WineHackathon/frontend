@@ -49,7 +49,7 @@ export function decrementGuestScans() {
   return next;
 }
 
-// Вспомогательная функция запросов
+// Вспомогательная функция запросов к бэкенду
 async function apiRequest(endpoint, options = {}) {
   const token = getAuthToken();
   const fingerprint = getDeviceFingerprint();
@@ -72,12 +72,12 @@ async function apiRequest(endpoint, options = {}) {
 }
 
 export const api = {
-  // 1. Сканирование этикетки
+  // 1. Сканирование этикетки (поддержка /api/v1/ml/scan и /api/v1/scan)
   async scanLabel(file) {
     const isAuth = !!getAuthToken();
     let remaining = isAuth ? null : getGuestScansRemaining();
 
-    // Проверка лимита для неавторизованных
+    // Быстрая локальная проверка квоты для неавторизованных
     if (!isAuth && remaining <= 0) {
       return {
         image_id: 'img_' + Date.now(),
@@ -90,30 +90,59 @@ export const api = {
 
     const formData = new FormData();
     formData.append('image', file);
+    formData.append('device_fingerprint', getDeviceFingerprint());
 
     try {
-      const resp = await apiRequest('/api/v1/ml/scan', {
+      // Сначала пробуем стандартный /api/v1/ml/scan
+      let resp = await apiRequest('/api/v1/ml/scan', {
         method: 'POST',
         body: formData,
       });
 
+      // Если 404, пробуем алиас /api/v1/scan
+      if (resp.status === 404) {
+        resp = await apiRequest('/api/v1/scan', {
+          method: 'POST',
+          body: formData,
+        });
+      }
+
       if (resp.ok) {
         const data = await resp.json();
-        if (!isAuth && data.remaining_scans !== undefined) {
+
+        // Синхронизация остатка бесплатных сканирований с Redis бэкенда
+        if (!isAuth && data.remaining_scans !== undefined && data.remaining_scans !== null) {
           localStorage.setItem('wine_guest_scans_remaining', data.remaining_scans.toString());
         }
+
+        // Если распознан слаг, но карточка вина еще не подтянута, запрашиваем детальную карточку
+        if (data.slug && !data.wine) {
+          try {
+            const wineDetail = await this.getWineBySlug(data.slug);
+            data.wine = wineDetail;
+          } catch (e) {
+            console.warn('Не удалось загрузить детальную карточку для распознанного слага:', data.slug);
+          }
+        }
+
+        if (data.wine) {
+          this.recordLocalScan(data.wine);
+        }
+
         return data;
       }
     } catch (err) {
-      console.warn('API /api/v1/ml/scan offline or error, using mock fallback:', err);
+      console.warn('Backend scanner unreachable, using fallback simulation:', err);
     }
 
-    // Демо-фолбэк (случайный выбор качественного российского вина из базы)
+    // Демо-фолбэк (на случай выключенного бэкенда при локальной верстке)
     if (!isAuth) {
       remaining = decrementGuestScans();
     }
 
     const randomWine = MOCK_WINES[Math.floor(Math.random() * MOCK_WINES.length)];
+    this.recordLocalScan(randomWine);
+
     return {
       image_id: 'demo_' + Date.now(),
       slug: randomWine.slug,
@@ -125,7 +154,7 @@ export const api = {
     };
   },
 
-  // 2. Получение информации о вине
+  // 2. Получение детальной информации о вине
   async getWineBySlug(slug) {
     try {
       const resp = await apiRequest(`/api/v1/catalog/wines/${slug}`);
@@ -133,13 +162,13 @@ export const api = {
         return await resp.json();
       }
     } catch (e) {
-      console.warn('Error fetching wine by slug, using mock:', e);
+      console.warn('Error fetching wine by slug from backend, using mock:', e);
     }
     const found = MOCK_WINES.find(w => w.slug === slug);
     return found || MOCK_WINES[0];
   },
 
-  // 3. Каталог вин
+  // 3. Каталог вин (список вин)
   async listWines(category = null) {
     try {
       const query = category ? `?category=${encodeURIComponent(category)}` : '';
@@ -157,25 +186,45 @@ export const api = {
     return MOCK_WINES;
   },
 
-  // 4. Авторизация (Email + Password)
+  // 4. Поиск похожих вин (Similar Wines)
+  async getSimilarWines(slug, limit = 4) {
+    try {
+      const resp = await apiRequest(`/api/v1/catalog/wines/${slug}/similar?limit=${limit}`);
+      if (resp.ok) {
+        return await resp.json();
+      }
+    } catch (e) {
+      console.warn('Error fetching similar wines:', e);
+    }
+    return MOCK_WINES.filter(w => w.slug !== slug).slice(0, limit);
+  },
+
+  // 5. Авторизация (Email + Password)
   async login(email, password) {
     try {
       const resp = await fetch('/api/v1/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({
+          email,
+          password,
+          device_fingerprint: getDeviceFingerprint(),
+          device_name: navigator.userAgent.includes('Mobile') ? 'Mobile Device' : 'Desktop Browser',
+        }),
       });
+
       if (resp.ok) {
         const data = await resp.json();
-        setAuthToken(data.tokens.access_token);
-        setStoredUser(data.user);
-        return { success: true, user: data.user };
+        const token = data.tokens?.access_token || data.access_token;
+        const user = data.user || data;
+        setAuthToken(token);
+        setStoredUser(user);
+        return { success: true, user };
       }
       const err = await resp.json();
-      return { success: false, error: err.detail || 'Ошибка входа' };
+      return { success: false, error: err.detail || 'Неверный email или пароль' };
     } catch (e) {
       console.warn('Login backend unreachable, using mock user session:', e);
-      // Demo login
       const demoUser = {
         id: 'usr_demo_' + Date.now(),
         email: email,
@@ -196,6 +245,7 @@ export const api = {
     }
   },
 
+  // 6. Регистрация нового пользователя с передачей device_fingerprint
   async register(email, password, firstName, lastName = '') {
     try {
       const resp = await fetch('/api/v1/auth/register', {
@@ -206,13 +256,18 @@ export const api = {
           password,
           first_name: firstName,
           last_name: lastName || null,
+          device_fingerprint: getDeviceFingerprint(),
+          device_name: navigator.userAgent.includes('Mobile') ? 'Mobile Device' : 'Desktop Browser',
         }),
       });
+
       if (resp.ok) {
         const data = await resp.json();
-        setAuthToken(data.tokens.access_token);
-        setStoredUser(data.user);
-        return { success: true, user: data.user };
+        const token = data.tokens?.access_token || data.access_token;
+        const user = data.user || data;
+        setAuthToken(token);
+        setStoredUser(user);
+        return { success: true, user };
       }
       const err = await resp.json();
       return { success: false, error: err.detail || 'Ошибка регистрации' };
@@ -239,15 +294,58 @@ export const api = {
     }
   },
 
+  // 7. Авторизация через Яндекс ID OAuth
+  async authYandex(code) {
+    try {
+      const resp = await fetch('/api/v1/auth/yandex', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code,
+          device_fingerprint: getDeviceFingerprint(),
+          device_name: navigator.userAgent.includes('Mobile') ? 'Mobile Device' : 'Desktop Browser',
+        }),
+      });
+      if (resp.ok) {
+        const data = await resp.json();
+        const token = data.tokens?.access_token || data.access_token;
+        const user = data.user || data;
+        setAuthToken(token);
+        setStoredUser(user);
+        return { success: true, user };
+      }
+    } catch (e) {
+      console.warn('Yandex OAuth failed:', e);
+    }
+    return { success: false };
+  },
+
+  async getYandexAuthUrl() {
+    try {
+      const resp = await fetch('/api/v1/auth/yandex/url');
+      if (resp.ok) {
+        const data = await resp.json();
+        return data.url;
+      }
+    } catch (e) {
+      console.warn('Failed to get Yandex URL:', e);
+    }
+    return 'https://oauth.yandex.ru';
+  },
+
   logout() {
     setAuthToken(null);
     setStoredUser(null);
   },
 
-  // 5. Личный винный погреб / вишлист
-  async getCellar() {
+  // 8. Личный винный погреб / вишлист
+  async getCellar(status = null) {
     try {
-      const resp = await apiRequest('/api/v1/users/cellar');
+      const query = status ? `?status=${status}` : '';
+      let resp = await apiRequest(`/api/v1/users/cellar${query}`);
+      if (resp.status === 404) {
+        resp = await apiRequest(`/api/v1/cellar${query}`);
+      }
       if (resp.ok) {
         return await resp.json();
       }
@@ -258,23 +356,39 @@ export const api = {
     return localCellar ? JSON.parse(localCellar) : [];
   },
 
-  async addToCellar(wine, status = 'in_cellar') {
+  async addToCellar(wine, status = 'in_cellar', tastingNotes = '') {
     try {
-      const resp = await apiRequest('/api/v1/users/cellar', {
+      let resp = await apiRequest('/api/v1/users/cellar', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          wine_id: wine.id,
+          wine_slug: wine.slug,
+          wine_id: wine.id && wine.id.length > 20 ? wine.id : undefined,
           status,
-          user_notes: '',
+          bottles_count: 1,
+          tasting_notes: tastingNotes || '',
         }),
       });
+
+      if (resp.status === 404) {
+        resp = await apiRequest('/api/v1/cellar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            wine_slug: wine.slug,
+            status,
+            bottles_count: 1,
+            tasting_notes: tastingNotes || '',
+          }),
+        });
+      }
+
       if (resp.ok) return await resp.json();
     } catch (e) {
       console.warn('Cellar add failed:', e);
     }
 
-    // Сохранение в локальный список
+    // Сохранение в локальный список при недоступности бэкенда
     const local = localStorage.getItem('wine_local_cellar');
     const cellar = local ? JSON.parse(local) : [];
     const newItem = {
@@ -289,7 +403,25 @@ export const api = {
     return newItem;
   },
 
-  // 6. История сканирований пользователя
+  async removeFromCellar(itemId) {
+    try {
+      let resp = await apiRequest(`/api/v1/users/cellar/${itemId}`, { method: 'DELETE' });
+      if (resp.status === 404) {
+        resp = await apiRequest(`/api/v1/cellar/${itemId}`, { method: 'DELETE' });
+      }
+      if (resp.ok) return true;
+    } catch (e) {
+      console.warn('Cellar remove failed:', e);
+    }
+    const local = localStorage.getItem('wine_local_cellar');
+    if (local) {
+      const cellar = JSON.parse(local).filter(item => item.id !== itemId);
+      localStorage.setItem('wine_local_cellar', JSON.stringify(cellar));
+    }
+    return true;
+  },
+
+  // 9. История сканирований пользователя
   async getScanHistory() {
     try {
       const resp = await apiRequest('/api/v1/users/scans?limit=20');
@@ -304,6 +436,7 @@ export const api = {
   },
 
   recordLocalScan(wine) {
+    if (!wine) return;
     const local = localStorage.getItem('wine_local_scans');
     const scans = local ? JSON.parse(local) : [];
     scans.unshift({
@@ -311,8 +444,25 @@ export const api = {
       predicted_slug: wine.slug,
       wine_name: wine.name,
       wine_category: wine.category,
+      wine,
       created_at: new Date().toISOString(),
     });
     localStorage.setItem('wine_local_scans', JSON.stringify(scans.slice(0, 30)));
+  },
+
+  // 10. Активные сессии пользователя
+  async getSessions() {
+    try {
+      let resp = await apiRequest('/api/v1/users/sessions');
+      if (resp.status === 404) {
+        resp = await apiRequest('/api/v1/sessions');
+      }
+      if (resp.ok) {
+        return await resp.json();
+      }
+    } catch (e) {
+      console.warn('Sessions fetch failed:', e);
+    }
+    return [];
   }
 };
