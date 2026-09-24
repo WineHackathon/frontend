@@ -96,19 +96,10 @@ export const api = {
     formData.append('device_fingerprint', getDeviceFingerprint());
 
     try {
-      // Сначала пробуем стандартный /api/v1/ml/scan
-      let resp = await apiRequest('/api/v1/ml/scan', {
+      const resp = await apiRequest('/api/v1/ml/scan', {
         method: 'POST',
         body: formData,
       });
-
-      // Если 404, пробуем алиас /api/v1/scan
-      if (resp.status === 404) {
-        resp = await apiRequest('/api/v1/scan', {
-          method: 'POST',
-          body: formData,
-        });
-      }
 
       if (resp.ok) {
         const data = await resp.json();
@@ -341,14 +332,11 @@ export const api = {
     setStoredUser(null);
   },
 
-  // 8. Личный винный погреб / вишлист
+  // 8. Личный винный погреб / вишлист (/api/v1/users/cellar)
   async getCellar(status = null) {
     try {
       const query = status ? `?status=${status}` : '';
-      let resp = await apiRequest(`/api/v1/users/cellar${query}`);
-      if (resp.status === 404) {
-        resp = await apiRequest(`/api/v1/cellar${query}`);
-      }
+      const resp = await apiRequest(`/api/v1/users/cellar${query}`);
       if (resp.ok) {
         return await resp.json();
       }
@@ -361,37 +349,36 @@ export const api = {
 
   async addToCellar(wine, status = 'in_cellar', tastingNotes = '') {
     try {
-      let resp = await apiRequest('/api/v1/users/cellar', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          wine_slug: wine.slug,
-          wine_id: wine.id && wine.id.length > 20 ? wine.id : undefined,
-          status,
-          bottles_count: 1,
-          tasting_notes: tastingNotes || '',
-        }),
-      });
-
-      if (resp.status === 404) {
-        resp = await apiRequest('/api/v1/cellar', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            wine_slug: wine.slug,
-            status,
-            bottles_count: 1,
-            tasting_notes: tastingNotes || '',
-          }),
-        });
+      const isUuid = (str) => typeof str === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(str);
+      const payload = {
+        status,
+        bottles_count: 1,
+        tasting_notes: tastingNotes || '',
+      };
+      if (isUuid(wine.id)) {
+        payload.wine_id = wine.id;
+      }
+      if (wine.slug) {
+        payload.wine_slug = wine.slug;
       }
 
-      if (resp.ok) return await resp.json();
+      const resp = await apiRequest('/api/v1/users/cellar', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (resp.ok) {
+        return await resp.json();
+      } else {
+        const errData = await resp.json().catch(() => ({}));
+        console.warn('Backend addToCellar responded with:', resp.status, errData);
+      }
     } catch (e) {
-      console.warn('Cellar add failed:', e);
+      console.warn('Backend addToCellar error:', e);
     }
 
-    // Сохранение в локальный список при недоступности бэкенда
+    // Сохранение в локальный список при недоступности бэкенда или отсутствии вина в БД каталога
     const local = localStorage.getItem('wine_local_cellar');
     const cellar = local ? JSON.parse(local) : [];
     const newItem = {
@@ -408,10 +395,7 @@ export const api = {
 
   async removeFromCellar(itemId) {
     try {
-      let resp = await apiRequest(`/api/v1/users/cellar/${itemId}`, { method: 'DELETE' });
-      if (resp.status === 404) {
-        resp = await apiRequest(`/api/v1/cellar/${itemId}`, { method: 'DELETE' });
-      }
+      const resp = await apiRequest(`/api/v1/users/cellar/${itemId}`, { method: 'DELETE' });
       if (resp.ok) return true;
     } catch (e) {
       console.warn('Cellar remove failed:', e);
@@ -424,7 +408,7 @@ export const api = {
     return true;
   },
 
-  // 9. История сканирований пользователя
+  // 9. История сканирований пользователя (/api/v1/users/scans)
   async getScanHistory() {
     try {
       const resp = await apiRequest('/api/v1/users/scans?limit=20');
@@ -453,13 +437,10 @@ export const api = {
     localStorage.setItem('wine_local_scans', JSON.stringify(scans.slice(0, 30)));
   },
 
-  // 10. Активные сессии пользователя
+  // 10. Активные сессии пользователя (/api/v1/users/sessions)
   async getSessions() {
     try {
-      let resp = await apiRequest('/api/v1/users/sessions');
-      if (resp.status === 404) {
-        resp = await apiRequest('/api/v1/sessions');
-      }
+      const resp = await apiRequest('/api/v1/users/sessions');
       if (resp.ok) {
         return await resp.json();
       }
