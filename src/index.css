@@ -3,6 +3,10 @@
 @tailwind utilities;
 
 @layer base {
+  html, body {
+    overflow-x: hidden;
+    max-width: 100vw;
+  }
   body {
     background-color: #fefdfa;
     color: #2c2a28;
@@ -136,6 +140,8 @@
   display: inline-flex;
   align-items: center;
   gap: 8px;
+  max-width: 100%;
+  box-sizing: border-box;
 }
 
 .wine-detail-info {
@@ -147,7 +153,10 @@
 .wine-detail-info__detail {
   display: flex;
   align-items: flex-start;
-  gap: 14px;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+  overflow: hidden;
 }
 
 .wine-detail-info__detail-image {
@@ -166,6 +175,8 @@
 .wine-detail-info__detail-content {
   flex: 1;
   padding-top: 2px;
+  min-width: 0;
+  overflow: hidden;
 }
 
 .wine-detail-info__detail-label {
@@ -184,6 +195,16 @@
   line-height: 140%;
   font-weight: 500;
   margin: 0;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 }
 
 .wine-dish-item {

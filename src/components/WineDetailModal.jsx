@@ -174,23 +174,23 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
   ];
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2c2a28]/65 backdrop-blur-md p-2 sm:p-4 overflow-y-auto animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#2c2a28]/65 backdrop-blur-md p-2 sm:p-4 overflow-y-auto overflow-x-hidden animate-fadeIn w-full max-w-full">
       
       {/* Container matching vino-svoe.ru card layout */}
-      <div className="w-full max-w-4xl rounded-[32px] bg-[#fefdfa] border border-[#efdbc6] overflow-hidden shadow-svoe-elevated relative my-auto max-h-[92vh] flex flex-col">
+      <div className="w-full max-w-4xl rounded-[28px] sm:rounded-[32px] bg-[#fefdfa] border border-[#efdbc6] overflow-hidden shadow-svoe-elevated relative my-auto max-h-[92vh] flex flex-col min-w-0 max-w-full box-border">
         
         {/* Top Breadcrumbs & Close Action Bar */}
-        <div className="px-5 py-3.5 flex items-center justify-between border-b border-[#efdbc6] bg-[#fdf9ed]/80 backdrop-blur-sm">
+        <div className="px-4 sm:px-5 py-3.5 flex items-center justify-between border-b border-[#efdbc6] bg-[#fdf9ed]/80 backdrop-blur-sm min-w-0">
           {/* Breadcrumbs (vino-svoe.ru exact style) */}
-          <nav className="flex items-center space-x-1.5 text-xs text-[#857e79] overflow-hidden truncate">
-            <span className="hover:text-[#7b3528] cursor-pointer">Главная</span>
+          <nav className="flex items-center space-x-1.5 text-xs text-[#857e79] overflow-hidden truncate min-w-0 mr-2">
+            <span className="hover:text-[#7b3528] cursor-pointer flex-shrink-0">Главная</span>
             <ChevronRight className="w-3 h-3 text-[#d7d4d2] flex-shrink-0" />
-            <span className="hover:text-[#7b3528] cursor-pointer">Каталог вин</span>
+            <span className="hover:text-[#7b3528] cursor-pointer flex-shrink-0">Каталог вин</span>
             <ChevronRight className="w-3 h-3 text-[#d7d4d2] flex-shrink-0" />
             <span className="text-[#8f3d42] font-medium truncate">{wine.name}</span>
           </nav>
 
-          <div className="flex items-center space-x-2 flex-shrink-0 ml-3">
+          <div className="flex items-center space-x-2 flex-shrink-0 ml-2">
             <button
               onClick={() => {
                 if (navigator.share) {
@@ -213,12 +213,12 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
         </div>
 
         {/* Scrollable Main Content: Two Columns on md+ */}
-        <div className="p-4 sm:p-6 sm:pb-8 overflow-y-auto bg-[#fefdfa] space-y-6">
+        <div className="p-3.5 sm:p-6 sm:pb-8 overflow-y-auto overflow-x-hidden bg-[#fefdfa] space-y-6 w-full max-w-full min-w-0 box-border">
           
-          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start w-full min-w-0">
             
             {/* LEFT COLUMN: Bottle Showcase on Warm Cream Pedestal (vino-svoe.ru style) */}
-            <div className="md:col-span-5 flex flex-col items-center">
+            <div className="md:col-span-5 flex flex-col items-center w-full min-w-0">
               <div className="w-full relative rounded-3xl bg-gradient-to-b from-[#fdf9ed] via-[#fbf6e8] to-[#fefdfa] border border-[#efdbc6] p-6 pt-8 pb-6 flex flex-col items-center shadow-sm">
                 
                 {/* Category chip on top of bottle */}
@@ -314,34 +314,34 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
             </div>
 
             {/* RIGHT COLUMN: Title, Manufacturer, Public Rating, Specs & Gastronomy */}
-            <div className="md:col-span-7 flex flex-col space-y-5 text-left">
+            <div className="md:col-span-7 flex flex-col space-y-5 text-left w-full min-w-0">
               
               {/* Main Title Block (wine-main-title-block from vino-svoe.ru) */}
-              <div className="border-b border-[#efdbc6] pb-4">
+              <div className="border-b border-[#efdbc6] pb-4 min-w-0">
                 
                 {/* Manufacturer Link */}
-                <div className="wine-main-title-block__manufacturer flex items-center space-x-1.5">
-                  <span className="text-xs uppercase tracking-wider text-[#857e79] font-semibold">Производитель:</span>
-                  <span className="text-sm font-medium text-[#7b3528] hover:underline cursor-pointer">
+                <div className="wine-main-title-block__manufacturer flex items-center space-x-1.5 min-w-0">
+                  <span className="text-xs uppercase tracking-wider text-[#857e79] font-semibold flex-shrink-0">Производитель:</span>
+                  <span className="text-sm font-medium text-[#7b3528] hover:underline cursor-pointer truncate">
                     {wine.winery || 'Поместье Голубицкое'}
                   </span>
                 </div>
 
                 {/* Wine Name in Playfair Display */}
-                <h1 className="wine-main-title-block__title text-2xl sm:text-3xl lg:text-4xl">
+                <h1 className="wine-main-title-block__title text-2xl sm:text-3xl lg:text-4xl break-words">
                   {wine.name}
                 </h1>
 
                 {/* Rating & Price Row */}
-                <div className="mt-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-2.5 min-w-0">
                   
                   {/* Public Roskachestvo Badge */}
-                  <div className="wine-main-title-block__rating_public shadow-sm">
-                    <Award className="w-4 h-4 text-[#dfa838]" />
-                    <span className="text-sm font-bold text-[#8f3d42]">
+                  <div className="wine-main-title-block__rating_public shadow-sm max-w-full min-w-0">
+                    <Award className="w-4 h-4 text-[#dfa838] flex-shrink-0" />
+                    <span className="text-sm font-bold text-[#8f3d42] flex-shrink-0">
                       {wine.roskachestvo_score ? `${wine.roskachestvo_score} / 100` : '4.87 / 5'}
                     </span>
-                    <span className="text-[11px] text-[#7b3528] font-medium border-l border-[#dfa838]/30 pl-2">
+                    <span className="text-[11px] text-[#7b3528] font-medium border-l border-[#dfa838]/30 pl-2 truncate min-w-0">
                       Роскачество «Винный гид»
                     </span>
                   </div>
@@ -375,10 +375,10 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
               </div>
 
               {/* Navigation Tabs for Details */}
-              <div className="flex items-center space-x-2 border-b border-[#ebe9e9] pb-2 text-xs font-semibold">
+              <div className="flex items-center space-x-1.5 sm:space-x-2 border-b border-[#ebe9e9] pb-2 text-xs font-semibold overflow-x-auto no-scrollbar w-full max-w-full min-w-0">
                 <button
                   onClick={() => setActiveTab('characteristics')}
-                  className={`pb-2 px-3 border-b-2 transition ${
+                  className={`pb-2 px-2.5 sm:px-3 border-b-2 transition whitespace-nowrap flex-shrink-0 ${
                     activeTab === 'characteristics'
                       ? 'border-[#8f3d42] text-[#8f3d42]'
                       : 'border-transparent text-[#857e79] hover:text-[#2c2a28]'
@@ -388,7 +388,7 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
                 </button>
                 <button
                   onClick={() => setActiveTab('taste')}
-                  className={`pb-2 px-3 border-b-2 transition ${
+                  className={`pb-2 px-2.5 sm:px-3 border-b-2 transition whitespace-nowrap flex-shrink-0 ${
                     activeTab === 'taste'
                       ? 'border-[#8f3d42] text-[#8f3d42]'
                       : 'border-transparent text-[#857e79] hover:text-[#2c2a28]'
@@ -398,7 +398,7 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
                 </button>
                 <button
                   onClick={() => setActiveTab('gastronomy')}
-                  className={`pb-2 px-3 border-b-2 transition ${
+                  className={`pb-2 px-2.5 sm:px-3 border-b-2 transition whitespace-nowrap flex-shrink-0 ${
                     activeTab === 'gastronomy'
                       ? 'border-[#8f3d42] text-[#8f3d42]'
                       : 'border-transparent text-[#857e79] hover:text-[#2c2a28]'
@@ -410,108 +410,108 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
 
               {/* TAB 1: Key Characteristics (wine-detail-info authentic cards) */}
               {activeTab === 'characteristics' && (
-                <div className="space-y-4">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <div className="space-y-4 w-full min-w-0">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full min-w-0">
                     
                     {/* 1. Цвет и категория */}
-                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80">
-                      <div className="wine-detail-info__detail-image text-[#8f3d42]">
+                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80 min-w-0">
+                      <div className="wine-detail-info__detail-image text-[#8f3d42] flex-shrink-0">
                         <Droplets className="w-5 h-5 text-[#8f3d42]" />
                       </div>
-                      <div className="wine-detail-info__detail-content">
+                      <div className="wine-detail-info__detail-content min-w-0">
                         <p className="wine-detail-info__detail-label">Цвет и тип</p>
-                        <p className="wine-detail-info__detail-value">
+                        <p className="wine-detail-info__detail-value break-words">
                           {wine.category || 'Белое'}, {wine.sugar_type || 'Сухое'}
                         </p>
                       </div>
                     </div>
 
                     {/* 2. Сортовой состав */}
-                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80">
-                      <div className="wine-detail-info__detail-image text-[#7b3528]">
+                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80 min-w-0">
+                      <div className="wine-detail-info__detail-image text-[#7b3528] flex-shrink-0">
                         <Grape className="w-5 h-5 text-[#7b3528]" />
                       </div>
-                      <div className="wine-detail-info__detail-content">
+                      <div className="wine-detail-info__detail-content min-w-0">
                         <p className="wine-detail-info__detail-label">Сортовой состав</p>
-                        <p className="wine-detail-info__detail-value truncate" title={(wine.grape_varieties || []).join(', ') || 'Шардоне 100%'}>
+                        <p className="wine-detail-info__detail-value break-words">
                           {(wine.grape_varieties || []).join(', ') || 'Шардоне 100%'}
                         </p>
                       </div>
                     </div>
 
                     {/* 3. Крепость / Алкоголь */}
-                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80">
-                      <div className="wine-detail-info__detail-image text-[#8f3d42]">
+                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80 min-w-0">
+                      <div className="wine-detail-info__detail-image text-[#8f3d42] flex-shrink-0">
                         <Percent className="w-5 h-5 text-[#8f3d42]" />
                       </div>
-                      <div className="wine-detail-info__detail-content">
+                      <div className="wine-detail-info__detail-content min-w-0">
                         <p className="wine-detail-info__detail-label">Крепость</p>
-                        <p className="wine-detail-info__detail-value">
+                        <p className="wine-detail-info__detail-value break-words">
                           {wine.alcohol_pct ? `${wine.alcohol_pct}% об.` : '12.5–13.5% об.'}
                         </p>
                       </div>
                     </div>
 
                     {/* 4. Сахар */}
-                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80">
-                      <div className="wine-detail-info__detail-image text-[#dfa838]">
+                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80 min-w-0">
+                      <div className="wine-detail-info__detail-image text-[#dfa838] flex-shrink-0">
                         <Sparkles className="w-5 h-5 text-[#dfa838]" />
                       </div>
-                      <div className="wine-detail-info__detail-content">
+                      <div className="wine-detail-info__detail-content min-w-0">
                         <p className="wine-detail-info__detail-label">Сахар</p>
-                        <p className="wine-detail-info__detail-value">
+                        <p className="wine-detail-info__detail-value break-words">
                           {wine.sugar_type || 'Сухое'} (до 4.0 г/дм³)
                         </p>
                       </div>
                     </div>
 
                     {/* 5. Год урожая (Винтаж) */}
-                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80">
-                      <div className="wine-detail-info__detail-image text-[#2c2a28]">
+                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80 min-w-0">
+                      <div className="wine-detail-info__detail-image text-[#2c2a28] flex-shrink-0">
                         <Calendar className="w-5 h-5 text-[#2c2a28]" />
                       </div>
-                      <div className="wine-detail-info__detail-content">
+                      <div className="wine-detail-info__detail-content min-w-0">
                         <p className="wine-detail-info__detail-label">Год урожая</p>
-                        <p className="wine-detail-info__detail-value">
+                        <p className="wine-detail-info__detail-value break-words">
                           {wine.vintage_year ? `${wine.vintage_year} год` : '2022 год'}
                         </p>
                       </div>
                     </div>
 
                     {/* 6. Температура подачи */}
-                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80">
-                      <div className="wine-detail-info__detail-image text-[#4b7b65]">
+                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80 min-w-0">
+                      <div className="wine-detail-info__detail-image text-[#4b7b65] flex-shrink-0">
                         <Thermometer className="w-5 h-5 text-[#4b7b65]" />
                       </div>
-                      <div className="wine-detail-info__detail-content">
+                      <div className="wine-detail-info__detail-content min-w-0">
                         <p className="wine-detail-info__detail-label">Температура подачи</p>
-                        <p className="wine-detail-info__detail-value">
+                        <p className="wine-detail-info__detail-value break-words">
                           {isRed ? '16–18 °C' : '10–12 °C'}
                         </p>
                       </div>
                     </div>
 
                     {/* 7. Потенциал выдержки */}
-                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80">
-                      <div className="wine-detail-info__detail-image text-[#b87333]">
+                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80 min-w-0">
+                      <div className="wine-detail-info__detail-image text-[#b87333] flex-shrink-0">
                         <Clock className="w-5 h-5 text-[#b87333]" />
                       </div>
-                      <div className="wine-detail-info__detail-content">
+                      <div className="wine-detail-info__detail-content min-w-0">
                         <p className="wine-detail-info__detail-label">Потенциал выдержки</p>
-                        <p className="wine-detail-info__detail-value">
+                        <p className="wine-detail-info__detail-value break-words">
                           {isRed ? '5–8 лет' : '3–5 лет'}
                         </p>
                       </div>
                     </div>
 
                     {/* 8. Терруар / Регион */}
-                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80">
-                      <div className="wine-detail-info__detail-image text-[#7b3528]">
+                    <div className="wine-detail-info__detail p-3 rounded-2xl bg-[#fdf9ed]/60 border border-[#efdbc6]/80 min-w-0">
+                      <div className="wine-detail-info__detail-image text-[#7b3528] flex-shrink-0">
                         <Compass className="w-5 h-5 text-[#7b3528]" />
                       </div>
-                      <div className="wine-detail-info__detail-content">
+                      <div className="wine-detail-info__detail-content min-w-0">
                         <p className="wine-detail-info__detail-label">Терруар</p>
-                        <p className="wine-detail-info__detail-value truncate" title={wine.region || 'Кубань. Таманский полуостров'}>
+                        <p className="wine-detail-info__detail-value break-words" title={wine.region || 'Кубань. Таманский полуостров'}>
                           {wine.region || 'Кубань. Таманский п-ов'}
                         </p>
                       </div>
@@ -682,23 +682,23 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
         </div>
 
         {/* Footer Actions: Exact vino-svoe.ru Primary & Secondary buttons */}
-        <div className="p-4 sm:p-5 bg-[#fdf9ed] border-t border-[#efdbc6] flex flex-wrap items-center justify-between gap-3">
+        <div className="p-3.5 sm:p-5 bg-[#fdf9ed] border-t border-[#efdbc6] flex flex-wrap items-center justify-between gap-3 w-full min-w-0">
           
           {wine.price_rub ? (
-            <div className="flex items-baseline space-x-2">
+            <div className="flex items-baseline space-x-2 min-w-0">
               <span className="text-xs text-[#857e79]">Ориентир цены:</span>
-              <span className="font-serif font-bold text-xl text-[#8f3d42]">
+              <span className="font-serif font-bold text-lg sm:text-xl text-[#8f3d42]">
                 ~{wine.price_rub} ₽
               </span>
             </div>
           ) : <div />}
 
-          <div className="flex items-center space-x-3 flex-1 sm:flex-initial justify-end">
+          <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-1 sm:flex-initial justify-end min-w-0">
             {/* Wishlist Button */}
             <button
               onClick={() => handleAddToCellar('wishlist')}
               disabled={isSaving || cellarStatus === 'wishlist' || cellarStatus === 'in_cellar'}
-              className={`px-5 py-3 rounded-full border text-xs font-semibold flex items-center space-x-1.5 transition shadow-sm ${
+              className={`px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-full border text-xs font-semibold flex items-center justify-center space-x-1.5 transition shadow-sm shrink-0 sm:shrink ${
                 cellarStatus === 'wishlist'
                   ? 'bg-[#fffbeb] border-[#fde68a] text-[#92400e] cursor-default'
                   : cellarStatus === 'in_cellar'
@@ -724,7 +724,7 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
             <button
               onClick={() => handleAddToCellar('in_cellar')}
               disabled={isSaving || cellarStatus === 'in_cellar'}
-              className={`flex-1 sm:flex-initial font-semibold py-3 px-6 rounded-full text-xs sm:text-sm flex items-center justify-center space-x-2 transition shadow-sm min-w-[170px] ${
+              className={`flex-1 sm:flex-initial font-semibold py-2.5 sm:py-3 px-4 sm:px-6 rounded-full text-xs sm:text-sm flex items-center justify-center space-x-2 transition shadow-sm min-w-0 sm:min-w-[170px] ${
                 cellarStatus === 'in_cellar'
                   ? 'bg-[#ecfdf5] border border-[#a7f3d0] text-[#065f46] cursor-default'
                   : 'svoe-btn-primary bg-[#8f3d42] hover:bg-[#ab494f] text-white active:scale-95'
