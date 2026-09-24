@@ -380,17 +380,58 @@ export const api = {
 
     // Сохранение в локальный список при недоступности бэкенда или отсутствии вина в БД каталога
     const local = localStorage.getItem('wine_local_cellar');
-    const cellar = local ? JSON.parse(local) : [];
+    let cellar = local ? JSON.parse(local) : [];
+
+    // Если добавляем в погреб, убираем из вишлиста
+    if (status === 'in_cellar') {
+      cellar = cellar.filter(item => !(item.wine?.slug === wine.slug && item.status === 'wishlist'));
+    }
+
+    // Проверяем наличие в том же статусе
+    const existingIndex = cellar.findIndex(item => item.wine?.slug === wine.slug && item.status === status);
+    if (existingIndex >= 0) {
+      cellar[existingIndex].bottles_count = (cellar[existingIndex].bottles_count || 1) + 1;
+      localStorage.setItem('wine_local_cellar', JSON.stringify(cellar));
+      return cellar[existingIndex];
+    }
+
     const newItem = {
       id: 'cellar_' + Date.now(),
       wine_id: wine.id,
       wine,
       status,
+      bottles_count: 1,
       created_at: new Date().toISOString()
     };
     cellar.unshift(newItem);
     localStorage.setItem('wine_local_cellar', JSON.stringify(cellar));
     return newItem;
+  },
+
+  async updateCellarItem(itemId, updateData) {
+    try {
+      const resp = await apiRequest(`/api/v1/users/cellar/${itemId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updateData),
+      });
+      if (resp.ok) {
+        return await resp.json();
+      }
+    } catch (e) {
+      console.warn('Cellar update failed:', e);
+    }
+    const local = localStorage.getItem('wine_local_cellar');
+    if (local) {
+      const cellar = JSON.parse(local).map(item => {
+        if (item.id === itemId) {
+          return { ...item, ...updateData };
+        }
+        return item;
+      });
+      localStorage.setItem('wine_local_cellar', JSON.stringify(cellar));
+    }
+    return null;
   },
 
   async removeFromCellar(itemId) {

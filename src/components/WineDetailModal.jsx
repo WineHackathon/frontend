@@ -24,18 +24,42 @@ import { api, getAuthToken } from '../services/api';
 
 export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommelier }) {
   const [addedStatus, setAddedStatus] = useState(null);
+  const [cellarStatus, setCellarStatus] = useState(null); // 'in_cellar' | 'wishlist' | null
   const [isSaving, setIsSaving] = useState(false);
   const [activeTab, setActiveTab] = useState('characteristics'); // 'characteristics' | 'taste' | 'gastronomy'
 
-  if (!wine) return null;
-
   const isAuth = !!getAuthToken();
+
+  useEffect(() => {
+    if (!wine) {
+      setCellarStatus(null);
+      setAddedStatus(null);
+      return;
+    }
+    let isMounted = true;
+    api.getCellar().then((items) => {
+      if (!isMounted || !Array.isArray(items)) return;
+      const found = items.find((item) =>
+        (item.wine_id && item.wine_id === wine.id) ||
+        (item.wine?.slug && item.wine?.slug === wine.slug) ||
+        (item.wine_slug && item.wine_slug === wine.slug)
+      );
+      if (found) {
+        setCellarStatus(found.status || 'in_cellar');
+      } else {
+        setCellarStatus(null);
+      }
+    }).catch(() => {});
+    return () => { isMounted = false; };
+  }, [wine]);
+
+  if (!wine) return null;
 
   const handleAddToCellar = async (status) => {
     if (!isAuth) {
       onOpenAuth({
         title: 'Винный погреб доступен авторизованным',
-        subtitle: 'Зарегистрируйтесь, чтобы сохранять продегустированные вина и вишлист в личном кабинете!'
+        subtitle: 'Зарегистрируйтесь, чтобы сохранять вина в личный погреб или вишлист!'
       });
       return;
     }
@@ -43,6 +67,7 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
     setIsSaving(true);
     try {
       await api.addToCellar(wine, status);
+      setCellarStatus(status);
       setAddedStatus(status);
       setTimeout(() => setAddedStatus(null), 2500);
     } catch (e) {
@@ -58,59 +83,82 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
     {
       name: 'Стейк рибай медиум',
       category: 'Мясо на углях',
-      image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=200&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300&auto=format&fit=crop&q=80',
       reason: 'Сочность и насыщенные волокна мяса сглаживают танины вина'
     },
     {
       name: 'Утиная грудка',
       category: 'Птица',
-      image: 'https://images.unsplash.com/photo-1514944298350-025a1e28fa03?w=200&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1574484284002-952d92456975?w=300&auto=format&fit=crop&q=80',
       reason: 'Ягодные ноты вина великолепно дополняют деликатный вкус дичи'
     },
     {
       name: 'Выдержанный пармезан',
       category: 'Сыры',
-      image: 'https://images.unsplash.com/photo-1452195100486-9cc805987862?w=200&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1452195100486-9cc805987862?w=300&auto=format&fit=crop&q=80',
       reason: 'Кристаллы соли и плотная структура сыра усиливают букет'
     },
     {
       name: 'Телячьи щечки',
       category: 'Томленые блюда',
-      image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=200&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=300&auto=format&fit=crop&q=80',
       reason: 'Пряный соус гармонирует с нотами дубовой выдержки'
     }
   ] : [
     {
       name: 'Устрицы и гребешки',
       category: 'Морепродукты',
-      image: 'https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=200&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=300&auto=format&fit=crop&q=80',
       reason: 'Минеральная солоноватость моллюсков подчеркивает свежую кислотность'
     },
     {
       name: 'Филе дорадо на пару',
       category: 'Белая рыба',
-      image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=200&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300&auto=format&fit=crop&q=80',
       reason: 'Нежная текстура рыбы не перебивает тонкие фруктовые ароматы'
     },
     {
       name: 'Сыр Бри и Камамбер',
       category: 'Мягкие сыры',
-      image: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=200&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1486297678162-eb2a19b0a32d?w=300&auto=format&fit=crop&q=80',
       reason: 'Сливочная сердцевина смягчает цитрусовые ноты вина'
     },
     {
       name: 'Ризотто со спаржей',
       category: 'Паста и ризотто',
-      image: 'https://images.unsplash.com/photo-1633964913295-ceb43826e7c9?w=200&auto=format&fit=crop&q=80',
+      image: 'https://images.unsplash.com/photo-1633964913295-ceb43826e7c9?w=300&auto=format&fit=crop&q=80',
       reason: 'Травянистая свежесть блюда создает идеальный баланс'
     }
   ];
+
+  const getDishImage = (name = '', category = '', idx = 0) => {
+    const text = `${name} ${category}`.toLowerCase();
+    if (text.includes('утк') || text.includes('птиц') || text.includes('куриц') || text.includes('индейк')) {
+      return 'https://images.unsplash.com/photo-1574484284002-952d92456975?w=300&auto=format&fit=crop&q=80';
+    }
+    if (text.includes('стейк') || text.includes('мяс') || text.includes('говядин') || text.includes('рибай') || text.includes('телятин')) {
+      return 'https://images.unsplash.com/photo-1544025162-d76694265947?w=300&auto=format&fit=crop&q=80';
+    }
+    if (text.includes('сыр') || text.includes('пармезан') || text.includes('бри') || text.includes('камамбер') || text.includes('чеддер')) {
+      return 'https://images.unsplash.com/photo-1452195100486-9cc805987862?w=300&auto=format&fit=crop&q=80';
+    }
+    if (text.includes('рыб') || text.includes('дорадо') || text.includes('сибас') || text.includes('лосос') || text.includes('форел')) {
+      return 'https://images.unsplash.com/photo-1519708227418-c8fd9a32b7a2?w=300&auto=format&fit=crop&q=80';
+    }
+    if (text.includes('устриц') || text.includes('гребешк') || text.includes('морепродукт') || text.includes('миди') || text.includes('креветк')) {
+      return 'https://images.unsplash.com/photo-1532336414038-cf19250c5757?w=300&auto=format&fit=crop&q=80';
+    }
+    if (text.includes('паст') || text.includes('ризотто') || text.includes('спагетти')) {
+      return 'https://images.unsplash.com/photo-1633964913295-ceb43826e7c9?w=300&auto=format&fit=crop&q=80';
+    }
+    return defaultDishes[idx % defaultDishes.length]?.image;
+  };
 
   const dishes = wine.pairings && wine.pairings.length > 0
     ? wine.pairings.map((p, i) => ({
         name: p.dish_name,
         category: p.food_category || 'Гастрономия',
-        image: defaultDishes[i % defaultDishes.length]?.image,
+        image: getDishImage(p.dish_name, p.food_category, i),
         reason: p.recommendation_reason
       }))
     : defaultDishes;
@@ -294,6 +342,20 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
                       Роскачество «Винный гид»
                     </span>
                   </div>
+
+                  {/* Cellar / Wishlist Status Badge */}
+                  {cellarStatus === 'in_cellar' && (
+                    <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#ecfdf5] border border-[#a7f3d0] text-[#065f46] text-xs font-semibold shadow-sm">
+                      <Check className="w-3.5 h-3.5 text-[#059669]" />
+                      <span>В вашем погребе</span>
+                    </div>
+                  )}
+                  {cellarStatus === 'wishlist' && (
+                    <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-[#fffbeb] border border-[#fde68a] text-[#92400e] text-xs font-semibold shadow-sm">
+                      <Bookmark className="w-3.5 h-3.5 text-[#d97706]" />
+                      <span>В вашем вишлисте</span>
+                    </div>
+                  )}
 
                   {/* Price */}
                   {wine.price_rub ? (
@@ -632,14 +694,20 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
             {/* Wishlist Button */}
             <button
               onClick={() => handleAddToCellar('wishlist')}
-              disabled={isSaving}
-              className="px-5 py-3 rounded-full bg-white hover:bg-[#f8ecc9] border border-[#efdbc6] text-[#8f3d42] text-xs font-semibold flex items-center space-x-1.5 transition active:scale-95 shadow-sm"
-              title="Добавить в вишлист"
+              disabled={isSaving || cellarStatus === 'wishlist' || cellarStatus === 'in_cellar'}
+              className={`px-5 py-3 rounded-full border text-xs font-semibold flex items-center space-x-1.5 transition shadow-sm ${
+                cellarStatus === 'wishlist'
+                  ? 'bg-[#fffbeb] border-[#fde68a] text-[#92400e] cursor-default'
+                  : cellarStatus === 'in_cellar'
+                  ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60'
+                  : 'bg-white hover:bg-[#f8ecc9] border-[#efdbc6] text-[#8f3d42] active:scale-95'
+              }`}
+              title={cellarStatus === 'in_cellar' ? 'Вино уже в вашем погребе' : 'Добавить в вишлист'}
             >
-              {addedStatus === 'wishlist' ? (
+              {addedStatus === 'wishlist' || cellarStatus === 'wishlist' ? (
                 <>
-                  <Check className="w-4 h-4 text-[#8f3d42]" />
-                  <span>В вишлисте!</span>
+                  <Check className="w-4 h-4 text-[#d97706]" />
+                  <span>В вишлисте</span>
                 </>
               ) : (
                 <>
@@ -652,18 +720,22 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
             {/* Primary Add to Cellar Button */}
             <button
               onClick={() => handleAddToCellar('in_cellar')}
-              disabled={isSaving}
-              className="flex-1 sm:flex-initial svoe-btn-primary bg-[#8f3d42] hover:bg-[#ab494f] text-white font-semibold py-3 px-6 rounded-full text-xs sm:text-sm flex items-center justify-center space-x-2 transition active:scale-95 shadow-sm min-w-[170px]"
+              disabled={isSaving || cellarStatus === 'in_cellar'}
+              className={`flex-1 sm:flex-initial font-semibold py-3 px-6 rounded-full text-xs sm:text-sm flex items-center justify-center space-x-2 transition shadow-sm min-w-[170px] ${
+                cellarStatus === 'in_cellar'
+                  ? 'bg-[#ecfdf5] border border-[#a7f3d0] text-[#065f46] cursor-default'
+                  : 'svoe-btn-primary bg-[#8f3d42] hover:bg-[#ab494f] text-white active:scale-95'
+              }`}
             >
-              {addedStatus === 'in_cellar' ? (
+              {addedStatus === 'in_cellar' || cellarStatus === 'in_cellar' ? (
                 <>
-                  <Check className="w-4 h-4 text-[#dfa838]" />
-                  <span>Сохранено в погреб!</span>
+                  <Check className="w-4 h-4 text-[#059669]" />
+                  <span>Уже в погребе</span>
                 </>
               ) : (
                 <>
                   <Wine className="w-4 h-4 text-white" />
-                  <span>В мой погреб</span>
+                  <span>{cellarStatus === 'wishlist' ? 'Куплено! В погреб' : 'В мой погреб'}</span>
                 </>
               )}
             </button>

@@ -6,19 +6,14 @@ import { getAuthToken } from '../services/api';
 
 export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWine, initialPrompt }) {
   const [messages, setMessages] = useState([]);
-  const [inputText, setInputText] = useState(initialPrompt || '');
+  const [inputText, setInputText] = useState(typeof initialPrompt === 'string' ? initialPrompt : initialPrompt?.text || '');
   const [currentQuestion, setCurrentQuestion] = useState(null);
   const [onboardingAnswers, setOnboardingAnswers] = useState({});
   const [connectionStatus, setConnectionStatus] = useState('connecting');
   const [isTyping, setIsTyping] = useState(false);
   const wsClientRef = useRef(null);
   const chatScrollRef = useRef(null);
-
-  useEffect(() => {
-    if (initialPrompt) {
-      setInputText(initialPrompt);
-    }
-  }, [initialPrompt]);
+  const pendingPromptRef = useRef(null);
 
   const isAuth = !!getAuthToken();
 
@@ -114,6 +109,13 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
       },
       onStatusChange: (status) => {
         setConnectionStatus(status);
+        if (status === 'connected' && pendingPromptRef.current) {
+          const { text, slug } = pendingPromptRef.current;
+          pendingPromptRef.current = null;
+          setTimeout(() => {
+            handleSendMessage(null, text, slug);
+          }, 250);
+        }
       },
       onAuthSuccess: (data) => {
         console.log('[SommelierChat] Сокет авторизован:', data.user_id);
@@ -127,6 +129,20 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
       client.disconnect();
     };
   }, [isOpen]);
+
+  useEffect(() => {
+    if (!initialPrompt) return;
+    const promptText = typeof initialPrompt === 'string' ? initialPrompt : initialPrompt.text;
+    const wineSlug = typeof initialPrompt === 'object' ? initialPrompt.wine?.slug : null;
+
+    if (promptText) {
+      if (wsClientRef.current && connectionStatus === 'connected') {
+        handleSendMessage(null, promptText, wineSlug);
+      } else {
+        pendingPromptRef.current = { text: promptText, slug: wineSlug };
+      }
+    }
+  }, [initialPrompt]);
 
   // При изменении статуса авторизации (вход через модалку) отправляем токен в открытый сокет
   useEffect(() => {
@@ -157,13 +173,15 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
     wsClientRef.current.sendAnswer(step, code, option);
   };
 
-  const handleSendMessage = (e) => {
+  const handleSendMessage = (e, overrideText = null, overrideWineSlug = null) => {
     e?.preventDefault();
-    const text = inputText.trim();
+    const text = (overrideText !== null ? overrideText : inputText).trim();
     if (!text || !wsClientRef.current) return;
 
     setMessages((prev) => [...prev, { role: 'user', content: text }]);
-    setInputText('');
+    if (overrideText === null) {
+      setInputText('');
+    }
 
     if (!isAuth) {
       setTimeout(() => {
@@ -176,7 +194,7 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
     }
 
     setIsTyping(true);
-    wsClientRef.current.sendMessage(text);
+    wsClientRef.current.sendMessage(text, overrideWineSlug);
   };
 
   const handleSendSuggestion = (text) => {

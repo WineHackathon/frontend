@@ -1,8 +1,8 @@
 import React from 'react';
-import { Wine, User, Sparkles, LogIn, Award } from 'lucide-react';
+import { Wine, User, Sparkles, LogIn, Award, Bookmark } from 'lucide-react';
 import { getAuthToken } from '../services/api';
 
-export default function Header({ user, remainingScans, onOpenAuth, onOpenProfile, onOpenSommelier }) {
+export default function Header({ user, remainingScans, onOpenAuth, onOpenProfile, onOpenWishlist, onOpenSommelier }) {
   const isAuth = !!user || !!getAuthToken();
 
   return (
@@ -25,8 +25,8 @@ export default function Header({ user, remainingScans, onOpenAuth, onOpenProfile
           </div>
         </div>
 
-        {/* Right actions: Remaining scans badge + Profile/Auth button */}
-        <div className="flex items-center space-x-2">
+        {/* Right actions: Remaining scans badge + Wishlist + Profile/Auth button */}
+        <div className="flex items-center space-x-1.5 sm:space-x-2">
           {!isAuth && (
             <div className="flex items-center space-x-1 px-2.5 py-1 rounded-full bg-[#fdf9ed] border border-[#efdbc6] text-[#8f3d42] text-xs font-semibold shadow-sm">
               <span className="w-1.5 h-1.5 rounded-full bg-[#8f3d42] animate-pulse"></span>
@@ -34,11 +34,29 @@ export default function Header({ user, remainingScans, onOpenAuth, onOpenProfile
             </div>
           )}
 
+          {/* Quick Wishlist Button */}
+          <button
+            onClick={() => {
+              if (isAuth) {
+                onOpenWishlist ? onOpenWishlist() : onOpenProfile('wishlist');
+              } else {
+                onOpenAuth({
+                  title: 'Вишлист покупок',
+                  subtitle: 'Войдите или зарегистрируйтесь, чтобы сохранять вина в вишлист и не забыть купить их.'
+                });
+              }
+            }}
+            className="p-2 rounded-full bg-white border border-[#efdbc6] hover:border-[#8f3d42] text-[#8f3d42] hover:bg-[#fdf9ed] transition shadow-sm flex items-center justify-center"
+            title="Вишлист (хочу купить)"
+          >
+            <Bookmark className="w-4 h-4" />
+          </button>
+
           {isAuth ? (
             <button
-              onClick={onOpenProfile}
+              onClick={() => onOpenProfile('cellar')}
               className="flex items-center space-x-1.5 p-1 pr-2.5 rounded-full bg-white border border-[#efdbc6] hover:border-[#8f3d42] transition text-[#2c2a28] shadow-sm"
-              title="Личный кабинет"
+              title="Личный кабинет и погреб"
             >
               <div className="w-6 h-6 rounded-full bg-[#8f3d42] text-white flex items-center justify-center text-[10px] font-bold">
                 {user?.first_name ? user.first_name[0].toUpperCase() : 'U'}

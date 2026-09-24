@@ -22,7 +22,13 @@ export default function App() {
   const [isAuthOpen, setIsAuthOpen] = useState(false);
   const [authPrompt, setAuthPrompt] = useState(null);
   const [isProfileOpen, setIsProfileOpen] = useState(false);
+  const [profileTab, setProfileTab] = useState('cellar');
   const [selectedWine, setSelectedWine] = useState(null);
+
+  const handleOpenProfile = (tab = 'cellar') => {
+    setProfileTab(tab);
+    setIsProfileOpen(true);
+  };
 
   useEffect(() => {
     const currentUser = getStoredUser();
@@ -71,7 +77,8 @@ export default function App() {
           title: 'Добро пожаловать в «Своё Вино»',
           subtitle: 'Авторизуйтесь, чтобы разблокировать безлимитный сканер, сохранять вина в личный погреб и общаться с AI-сомелье!'
         })}
-        onOpenProfile={() => setIsProfileOpen(true)}
+        onOpenProfile={(tab = 'cellar') => handleOpenProfile(tab)}
+        onOpenWishlist={() => handleOpenProfile('wishlist')}
         onOpenSommelier={() => {
           setSommelierPrompt('');
           setIsSommelierOpen(true);
@@ -128,6 +135,7 @@ export default function App() {
         user={user}
         onLogout={handleLogout}
         onSelectWine={(wine) => setSelectedWine(wine)}
+        initialTab={profileTab}
       />
 
     </div>
