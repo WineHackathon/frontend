@@ -63,10 +63,13 @@ export default function WineCard({ wine, onSelect }) {
           </div>
 
           {/* Mini 4D Taste Matrix Scales (Sweetness, Body, Acidity, Oak) */}
-          <div className="grid grid-cols-4 gap-1.5 mt-1.5 pt-1.5 border-t border-[#ebe9e9] text-[9px]">
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-x-2.5 gap-y-1.5 mt-2 pt-2 border-t border-[#ebe9e9] text-[9px]">
             <div>
-              <span className="text-[#857e79] block text-[8px] font-medium">Сладость</span>
-              <div className="h-1 rounded-full bg-[#ebe9e9] mt-0.5 overflow-hidden">
+              <div className="flex justify-between items-center text-[#857e79] text-[8.5px] font-medium mb-0.5">
+                <span className="truncate">Сладость</span>
+                <span className="font-mono text-[#dfa838] text-[8px]">{wine.sweetness || 1.2}</span>
+              </div>
+              <div className="h-1 rounded-full bg-[#ebe9e9] overflow-hidden">
                 <div
                   className="h-full bg-[#dfa838] rounded-full"
                   style={{ width: `${((wine.sweetness || 1.2) / 5) * 100}%` }}
@@ -74,8 +77,11 @@ export default function WineCard({ wine, onSelect }) {
               </div>
             </div>
             <div>
-              <span className="text-[#857e79] block text-[8px] font-medium">Тело</span>
-              <div className="h-1 rounded-full bg-[#ebe9e9] mt-0.5 overflow-hidden">
+              <div className="flex justify-between items-center text-[#857e79] text-[8.5px] font-medium mb-0.5">
+                <span className="truncate">Тело</span>
+                <span className="font-mono text-[#8f3d42] text-[8px]">{wine.body || 3.0}</span>
+              </div>
+              <div className="h-1 rounded-full bg-[#ebe9e9] overflow-hidden">
                 <div
                   className="h-full bg-[#8f3d42] rounded-full"
                   style={{ width: `${((wine.body || 3.0) / 5) * 100}%` }}
@@ -83,8 +89,11 @@ export default function WineCard({ wine, onSelect }) {
               </div>
             </div>
             <div>
-              <span className="text-[#857e79] block text-[8px] font-medium">Кислотность</span>
-              <div className="h-1 rounded-full bg-[#ebe9e9] mt-0.5 overflow-hidden">
+              <div className="flex justify-between items-center text-[#857e79] text-[8.5px] font-medium mb-0.5">
+                <span className="truncate">Кислотность</span>
+                <span className="font-mono text-[#4b7b65] text-[8px]">{wine.acidity || 3.0}</span>
+              </div>
+              <div className="h-1 rounded-full bg-[#ebe9e9] overflow-hidden">
                 <div
                   className="h-full bg-[#4b7b65] rounded-full"
                   style={{ width: `${((wine.acidity || 3.0) / 5) * 100}%` }}
@@ -92,8 +101,11 @@ export default function WineCard({ wine, onSelect }) {
               </div>
             </div>
             <div>
-              <span className="text-[#857e79] block text-[8px] font-medium">Дуб</span>
-              <div className="h-1 rounded-full bg-[#ebe9e9] mt-0.5 overflow-hidden">
+              <div className="flex justify-between items-center text-[#857e79] text-[8.5px] font-medium mb-0.5">
+                <span className="truncate">Дуб</span>
+                <span className="font-mono text-[#b87333] text-[8px]">{wine.oak || 2.0}</span>
+              </div>
+              <div className="h-1 rounded-full bg-[#ebe9e9] overflow-hidden">
                 <div
                   className="h-full bg-[#b87333] rounded-full"
                   style={{ width: `${((wine.oak || 2.0) / 5) * 100}%` }}

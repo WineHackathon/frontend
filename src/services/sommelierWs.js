@@ -1,5 +1,5 @@
 import { MOCK_WINES } from '../data/mockWines';
-import { getAuthToken } from './api';
+import { getAuthToken, getStoredUser } from './api';
 
 /**
  * Сервис управления WebSocket-сессией AI-Сомелье (/ws/sommelier).
@@ -178,25 +178,61 @@ export class SommelierWebSocketClient {
     this.isConnecting = false;
     this.onStatusChange('connected');
 
-    // Эмуляция приветственного сообщения и вопроса №1
+    const user = getStoredUser();
+    const hasStoredProfile = !!(
+      localStorage.getItem('wine_taste_onboarding_completed') === 'true' ||
+      (user?.taste_profile?.preferred_categories?.length > 0)
+    );
+
+    // Эмуляция приветственного сообщения
     setTimeout(() => {
       this.onMessage({
         role: 'assistant',
-        content: 'Здравствуйте! Я ваш цифровой AI-сомелье. Вы можете задать мне любой вопрос о винах, гастропарах и регионах, либо пройти быстрый опрос из 5 вопросов для точного персонального подбора!',
+        content: hasStoredProfile
+          ? 'С возвращением! Я помню ваши вкусовые предпочтения. Чем могу помочь сегодня? Спросите о подборе вина к блюду (например, к стейку или рыбе), попросите найти похожее вино или задайте любой вопрос!'
+          : 'Здравствуйте! Я ваш цифровой AI-сомелье. Вы можете задать мне любой вопрос о винах, гастропарах и регионах, либо пройти быстрый опрос из 5 вопросов для точного персонального подбора!',
       });
-      this.onQuestion(BASELINE_QUESTIONS[0]);
+      if (!hasStoredProfile) {
+        this.onQuestion(BASELINE_QUESTIONS[0]);
+      }
     }, 300);
+  }
+
+  // Принудительный перезапуск 5 вопросов подбора вкуса
+  restartOnboarding() {
+    localStorage.removeItem('wine_taste_onboarding_completed');
+    this.answers = {};
+    this.currentStep = 1;
+    if (!this.useMock && this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: 'answer', step: 1, reset: true }));
+    }
+    this.onQuestion(BASELINE_QUESTIONS[0]);
   }
 
   handleServerMessage(data) {
     const type = data.type;
 
     if (type === 'welcome') {
+      const user = getStoredUser();
+      const hasStoredProfile = !!(
+        localStorage.getItem('wine_taste_onboarding_completed') === 'true' ||
+        (user?.taste_profile?.preferred_categories?.length > 0) ||
+        (user?.taste_profile?.sweetness_pref !== undefined && user?.taste_profile?.sweetness_pref !== null)
+      );
+
+      const welcomeMsg = hasStoredProfile
+        ? (data.message && !data.message.includes('5 вопросов')
+            ? data.message
+            : 'С возвращением! Я помню ваши вкусовые предпочтения. Чем могу помочь? Спросите о подборе вина к блюду (например, к стейку или рыбе), попросите найти аналог любимого вина или задайте любой вопрос.')
+        : data.message;
+
       this.onMessage({
         role: 'assistant',
-        content: data.message,
+        content: welcomeMsg,
       });
-      if (data.question) {
+
+      // Не запускаем повторно опрос, если вкусы уже сохранены
+      if (data.question && !hasStoredProfile) {
         this.onQuestion(data.question);
       }
     } else if (type === 'next_question') {
@@ -205,6 +241,7 @@ export class SommelierWebSocketClient {
       // Бэкенд Фаза 1: мгновенные карточки (15-20 мс) до начала стриминга текста
       this.onCandidatesReady(data.candidates || []);
     } else if (type === 'completed' || type === 'onboarding_complete') {
+      localStorage.setItem('wine_taste_onboarding_completed', 'true');
       this.onCompleted({
         message: data.message,
         candidates: data.candidates || [],

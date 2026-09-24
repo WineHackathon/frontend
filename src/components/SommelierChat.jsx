@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { X, Send, Sparkles, Bot, Lock, ArrowRight } from 'lucide-react';
+import { X, Send, Sparkles, Bot, Lock, ArrowRight, RefreshCw } from 'lucide-react';
 import { SommelierWebSocketClient } from '../services/sommelierWs';
 import WineCard from './WineCard';
 import { getAuthToken } from '../services/api';
@@ -179,6 +179,26 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
     wsClientRef.current.sendMessage(text);
   };
 
+  const handleSendSuggestion = (text) => {
+    if (!text || !wsClientRef.current) return;
+    if (!isAuth) {
+      onOpenAuth({
+        title: 'Регистрация для ответа сомелье',
+        subtitle: 'Вы можете вводить любые запросы, но для генерации персонального ответа и подбора вин требуется быстрая авторизация.'
+      });
+      return;
+    }
+    setMessages((prev) => [...prev, { role: 'user', content: text }]);
+    setIsTyping(true);
+    wsClientRef.current.sendMessage(text);
+  };
+
+  const handleRestartOnboarding = () => {
+    if (wsClientRef.current) {
+      wsClientRef.current.restartOnboarding();
+    }
+  };
+
   if (!isOpen) return null;
 
   return (
@@ -315,6 +335,45 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
             </div>
           )}
         </div>
+
+        {/* Quick Suggestion Pills (Gastropairing & Retake preferences) */}
+        {!currentQuestion && (
+          <div className="flex items-center space-x-2 overflow-x-auto py-2 px-3 no-scrollbar border-t border-[#efdbc6]/60 bg-[#fdfbf7] flex-shrink-0">
+            <button
+              type="button"
+              onClick={() => handleSendSuggestion('Подбери красное вино к стейку из говядины')}
+              className="whitespace-nowrap px-3 py-1 rounded-full bg-white hover:bg-[#f8ecc9] border border-[#efdbc6] text-[11px] font-medium text-[#2c2a28] hover:text-[#8f3d42] transition shadow-xs active:scale-95 flex items-center space-x-1"
+            >
+              <span>🥩</span>
+              <span>Вино к стейку</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSendSuggestion('Какое белое вино подойдет к рыбе и морепродуктам?')}
+              className="whitespace-nowrap px-3 py-1 rounded-full bg-white hover:bg-[#f8ecc9] border border-[#efdbc6] text-[11px] font-medium text-[#2c2a28] hover:text-[#8f3d42] transition shadow-xs active:scale-95 flex items-center space-x-1"
+            >
+              <span>🐟</span>
+              <span>К рыбе и морепродуктам</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => handleSendSuggestion('Подбери вино к сырной тарелке')}
+              className="whitespace-nowrap px-3 py-1 rounded-full bg-white hover:bg-[#f8ecc9] border border-[#efdbc6] text-[11px] font-medium text-[#2c2a28] hover:text-[#8f3d42] transition shadow-xs active:scale-95 flex items-center space-x-1"
+            >
+              <span>🧀</span>
+              <span>К сырам</span>
+            </button>
+            <button
+              type="button"
+              onClick={handleRestartOnboarding}
+              className="whitespace-nowrap px-3 py-1 rounded-full bg-[#f9f1f1] hover:bg-[#edd4d6] border border-[#edd4d6] text-[11px] font-medium text-[#8f3d42] transition shadow-xs active:scale-95 flex items-center space-x-1"
+              title="Пройти 5 вопросов подбора вкуса заново"
+            >
+              <RefreshCw className="w-3 h-3 text-[#8f3d42]" />
+              <span>Перенастроить вкусы</span>
+            </button>
+          </div>
+        )}
 
         {/* Bottom Input Area: "введите запрос" (Matching Scheme 1 Right Screen) */}
         <form
