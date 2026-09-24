@@ -61,7 +61,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-[#fefdfa] text-[#2c2a28] flex flex-col font-sans selection:bg-[#8f3d42] selection:text-white relative">
+    <div className="h-[100dvh] w-full overflow-hidden bg-black text-[#2c2a28] flex flex-col font-sans selection:bg-[#8f3d42] selection:text-white relative">
       
       {/* Top Floating Pill Header (vino-svoe.ru style) */}
       <Header
@@ -78,8 +78,8 @@ export default function App() {
         }}
       />
 
-      {/* Main Scanner View (Wireframe Screen 1) */}
-      <main className="flex-1 w-full flex flex-col items-center justify-center">
+      {/* Main Scanner View (Full Screen Viewport) */}
+      <main className="w-full h-full relative overflow-hidden flex-1">
         <ScannerView
           remainingScans={remainingScans}
           onScanComplete={handleScanComplete}
