@@ -213,6 +213,13 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
 
   const handleRestartOnboarding = () => {
     if (wsClientRef.current) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          role: 'assistant',
+          content: 'Давайте заново настроим ваши вкусовые предпочтения! Ответьте на 5 коротких вопросов.'
+        }
+      ]);
       wsClientRef.current.restartOnboarding();
     }
   };

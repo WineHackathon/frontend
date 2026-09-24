@@ -203,10 +203,10 @@ export class SommelierWebSocketClient {
     localStorage.removeItem('wine_taste_onboarding_completed');
     this.answers = {};
     this.currentStep = 1;
-    if (!this.useMock && this.ws && this.ws.readyState === WebSocket.OPEN) {
-      this.ws.send(JSON.stringify({ type: 'answer', step: 1, reset: true }));
-    }
     this.onQuestion(BASELINE_QUESTIONS[0]);
+    if (!this.useMock && this.ws && this.ws.readyState === WebSocket.OPEN) {
+      this.ws.send(JSON.stringify({ type: 'start_onboarding' }));
+    }
   }
 
   handleServerMessage(data) {
