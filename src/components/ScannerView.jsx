@@ -118,17 +118,31 @@ export default function ScannerView({
     startCameraStream(nextMode);
   };
 
-  // Capture current video frame onto canvas
+  // Capture current video frame onto canvas with resolution downscaling (max 1280px)
   const captureFrameFromVideo = () => {
     if (!videoRef.current) return null;
     const video = videoRef.current;
     if (video.videoWidth === 0 || video.videoHeight === 0) return null;
 
+    let targetWidth = video.videoWidth;
+    let targetHeight = video.videoHeight;
+    const MAX_DIM = 1280;
+
+    if (targetWidth > MAX_DIM || targetHeight > MAX_DIM) {
+      if (targetWidth > targetHeight) {
+        targetHeight = Math.round((targetHeight * MAX_DIM) / targetWidth);
+        targetWidth = MAX_DIM;
+      } else {
+        targetWidth = Math.round((targetWidth * MAX_DIM) / targetHeight);
+        targetHeight = MAX_DIM;
+      }
+    }
+
     const canvas = document.createElement('canvas');
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = targetWidth;
+    canvas.height = targetHeight;
     const ctx = canvas.getContext('2d');
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+    ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
 
     return new Promise((resolve) => {
       canvas.toBlob((blob) => {
@@ -137,9 +151,59 @@ export default function ScannerView({
           return;
         }
         const file = new File([blob], `wine-snap-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        const previewUrl = canvas.toDataURL('image/jpeg', 0.9);
+        const previewUrl = canvas.toDataURL('image/jpeg', 0.85);
         resolve({ file, previewUrl });
-      }, 'image/jpeg', 0.92);
+      }, 'image/jpeg', 0.85);
+    });
+  };
+
+  // Helper to downscale and compress gallery images before upload
+  const compressImageFile = (file) => {
+    return new Promise((resolve) => {
+      if (file.size <= 300 * 1024 && file.type === 'image/jpeg') {
+        const previewUrl = URL.createObjectURL(file);
+        resolve({ file, previewUrl });
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        const img = new Image();
+        img.onload = () => {
+          let targetWidth = img.width;
+          let targetHeight = img.height;
+          const MAX_DIM = 1280;
+
+          if (targetWidth > MAX_DIM || targetHeight > MAX_DIM) {
+            if (targetWidth > targetHeight) {
+              targetHeight = Math.round((targetHeight * MAX_DIM) / targetWidth);
+              targetWidth = MAX_DIM;
+            } else {
+              targetWidth = Math.round((targetWidth * MAX_DIM) / targetHeight);
+              targetHeight = MAX_DIM;
+            }
+          }
+
+          const canvas = document.createElement('canvas');
+          canvas.width = targetWidth;
+          canvas.height = targetHeight;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, targetWidth, targetHeight);
+
+          canvas.toBlob((blob) => {
+            if (!blob) {
+              resolve({ file, previewUrl: e.target.result });
+              return;
+            }
+            const compressed = new File([blob], file.name.replace(/\.[^/.]+$/, "") + ".jpg", { type: 'image/jpeg' });
+            resolve({ file: compressed, previewUrl: canvas.toDataURL('image/jpeg', 0.85) });
+          }, 'image/jpeg', 0.85);
+        };
+        img.onerror = () => resolve({ file, previewUrl: e.target.result });
+        img.src = e.target.result;
+      };
+      reader.onerror = () => resolve({ file, previewUrl: null });
+      reader.readAsDataURL(file);
     });
   };
 
@@ -165,6 +229,16 @@ export default function ScannerView({
         api.recordLocalScan(result.wine);
       } else {
         setScanError('Этикетка вина не обнаружена в кадре. Пожалуйста, наведите камеру на бутылку вина.');
+        // Автоматически возвращаем живой видоискатель через 3 сек, чтобы экран не "залипал"
+        setTimeout(() => {
+          setImagePreview((current) => {
+            if (current && !result.wine) {
+              setCapturedImage(null);
+              return null;
+            }
+            return current;
+          });
+        }, 3000);
       }
       onScanComplete(result.remaining_scans);
     } catch (err) {
@@ -177,13 +251,21 @@ export default function ScannerView({
 
   // Shutter action: take live picture & start scanning
   const handleSnapPhoto = async () => {
+    if (isScanning) return;
+
+    // Если превью уже показано (например, после неудачного скана), нажатие кнопки "Спуск"
+    // мгновенно сбрасывает старый кадр и возвращает живую камеру
+    if (imagePreview) {
+      handleRetake();
+      return;
+    }
+
     if (isCameraActive && videoRef.current) {
       const snap = await captureFrameFromVideo();
       if (snap) {
         setCapturedImage(snap.file);
         setImagePreview(snap.previewUrl);
-        // Pause live camera to freeze preview
-        stopCameraStream();
+        // Не убиваем медиапоток камеры, чтобы не было черных экранов и зависаний
         await executeScan(snap.file);
         return;
       }
@@ -204,7 +286,9 @@ export default function ScannerView({
     setImagePreview(null);
     setScanResult(null);
     setScanError(null);
-    startCameraStream(facingMode);
+    if (!isCameraActive || !streamRef.current) {
+      startCameraStream(facingMode);
+    }
   };
 
   // Dismiss scan result card
@@ -214,23 +298,20 @@ export default function ScannerView({
   };
 
   // Handle file picker upload
-  const handleFileChange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+  const handleFileChange = async (e) => {
+    const rawFile = e.target.files[0];
+    if (!rawFile) return;
 
-    stopCameraStream();
-    setCapturedImage(file);
     setScanResult(null);
     setScanError(null);
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setImagePreview(event.target.result);
-    };
-    reader.readAsDataURL(file);
+    // Сжимаем тяжелые фото с камеры телефона перед отправкой (ускорение в 10 раз)
+    const { file, previewUrl } = await compressImageFile(rawFile);
+    setCapturedImage(file);
+    setImagePreview(previewUrl);
 
     // Auto-run scan on upload
-    executeScan(file);
+    await executeScan(file);
   };
 
   const handleTriggerUpload = () => {
@@ -439,9 +520,23 @@ export default function ScannerView({
 
         {/* ERROR NOTICE */}
         {scanError && (
-          <div className="w-full mb-3 p-3 rounded-2xl bg-red-950/80 backdrop-blur-md border border-red-500/40 text-red-100 text-xs flex items-center space-x-2 animate-fadeIn shadow-lg">
-            <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
-            <span>{scanError}</span>
+          <div
+            onClick={handleRetake}
+            className="w-full mb-3 p-3 rounded-2xl bg-red-950/85 backdrop-blur-md border border-red-500/40 text-red-100 text-xs flex items-center justify-between animate-fadeIn shadow-lg cursor-pointer"
+          >
+            <div className="flex items-center space-x-2">
+              <AlertCircle className="w-4 h-4 flex-shrink-0 text-red-400" />
+              <span>{scanError}</span>
+            </div>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                handleRetake();
+              }}
+              className="ml-2 px-2.5 py-1 bg-red-800/80 hover:bg-red-700 rounded-lg text-[11px] font-semibold text-white whitespace-nowrap shadow-sm"
+            >
+              Навести снова
+            </button>
           </div>
         )}
 
@@ -473,10 +568,12 @@ export default function ScannerView({
             title={
               isScanning
                 ? 'Распознаем этикетку...'
+                : imagePreview && !scanResult?.wine
+                ? 'Навести камеру снова'
                 : isCameraActive && !imagePreview
                 ? 'Сделать снимок'
                 : imagePreview
-                ? 'Распознать повторно'
+                ? 'Сделать новый снимок'
                 : 'Сканировать'
             }
           >
