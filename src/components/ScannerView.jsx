@@ -30,6 +30,8 @@ export default function ScannerView({
   const [isScanning, setIsScanning] = useState(false);
   const [scanResult, setScanResult] = useState(null);
   const [scanError, setScanError] = useState(null);
+  const [zoomLevel, setZoomLevel] = useState(1.0);
+  const [zoomCapabilities, setZoomCapabilities] = useState(null);
 
   const videoRef = useRef(null);
   const streamRef = useRef(null);
@@ -58,16 +60,36 @@ export default function ScannerView({
     }
 
     try {
-      const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
+      // Find the primary 1x wide-angle back camera (avoid telephoto/zoom lens)
+      let chosenDeviceId = undefined;
+      try {
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter((d) => d.kind === 'videoinput');
+        if (mode === 'environment') {
+          const backCameras = videoDevices.filter((d) => {
+            const l = (d.label || '').toLowerCase();
+            return l.includes('back') || l.includes('rear') || l.includes('environment');
+          });
+          const wideCam = backCameras.find((d) => {
+            const l = d.label.toLowerCase();
+            return !l.includes('telephoto') && !l.includes('zoom') && !l.includes('macro') && !l.includes('2x') && !l.includes('3x');
+          }) || backCameras[0];
+          if (wideCam && wideCam.deviceId) {
+            chosenDeviceId = { exact: wideCam.deviceId };
+          }
+        }
+      } catch (e) {
+        console.debug('Camera enumeration failed:', e);
+      }
+
+      const screenRatio = typeof window !== 'undefined' ? window.innerWidth / window.innerHeight : 9 / 16;
       const constraints = {
         video: {
-          facingMode: { ideal: mode },
-          width: { min: 720, ideal: isPortrait ? 1080 : 1920, max: 3840 },
-          height: { min: 720, ideal: isPortrait ? 1920 : 1080, max: 3840 },
-          advanced: [
-            { focusMode: 'continuous' },
-            { exposureMode: 'continuous' }
-          ]
+          deviceId: chosenDeviceId,
+          facingMode: chosenDeviceId ? undefined : { ideal: mode },
+          aspectRatio: { ideal: screenRatio },
+          width: { ideal: 1920 },
+          height: { ideal: 1080 }
         },
         audio: false
       };
@@ -75,7 +97,7 @@ export default function ScannerView({
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
 
-      // Enable continuous auto-focus & exposure on mobile devices if supported
+      // Enable continuous auto-focus & exposure, and explicitly FORCE zoom to 1.0 (no default digital zoom)
       const track = stream.getVideoTracks()[0];
       if (track && track.getCapabilities) {
         try {
@@ -87,11 +109,17 @@ export default function ScannerView({
           if (caps.exposureMode && caps.exposureMode.includes('continuous')) {
             adv.exposureMode = 'continuous';
           }
+          if (caps.zoom) {
+            const targetZoom = (caps.zoom.min <= 1.0 && caps.zoom.max >= 1.0) ? 1.0 : caps.zoom.min;
+            adv.zoom = targetZoom;
+            setZoomLevel(targetZoom);
+            setZoomCapabilities(caps.zoom);
+          }
           if (Object.keys(adv).length > 0) {
             await track.applyConstraints({ advanced: [adv] });
           }
         } catch (e) {
-          console.debug('Autofocus constraint skipped:', e);
+          console.debug('Autofocus/zoom constraint skipped:', e);
         }
       }
 
@@ -135,6 +163,19 @@ export default function ScannerView({
       stopCameraStream();
     };
   }, []);
+
+  const handleSetZoom = async (newZoom) => {
+    if (!streamRef.current) return;
+    const track = streamRef.current.getVideoTracks()[0];
+    if (track && track.applyConstraints) {
+      try {
+        await track.applyConstraints({ advanced: [{ zoom: newZoom }] });
+        setZoomLevel(newZoom);
+      } catch (err) {
+        console.warn('Failed to set zoom:', err);
+      }
+    }
+  };
 
   // Flip front / rear camera
   const handleToggleFacingMode = () => {
@@ -573,6 +614,49 @@ export default function ScannerView({
           <div className="mb-2.5 px-3.5 py-1 rounded-full bg-black/60 backdrop-blur-md border border-white/20 text-[#efdbc6] text-[11px] font-medium flex items-center space-x-1.5 shadow-sm">
             <AlertCircle className="w-3.5 h-3.5 text-[#f3c760]" />
             <span>Осталось {remainingScans} из 5 бесплатных сканирований</span>
+          </div>
+        )}
+
+        {/* NATIVE ZOOM SELECTOR (0.6x / 1x / 2x) */}
+        {isCameraActive && !imagePreview && zoomCapabilities && zoomCapabilities.max > 1.0 && (
+          <div className="mb-3 flex items-center space-x-2 bg-black/60 backdrop-blur-md px-3 py-1 rounded-full border border-white/20 shadow-md">
+            {zoomCapabilities.min <= 0.7 && (
+              <button
+                type="button"
+                onClick={() => handleSetZoom(zoomCapabilities.min)}
+                className={`px-2 py-0.5 rounded-full text-[11px] font-bold transition ${
+                  Math.abs(zoomLevel - zoomCapabilities.min) < 0.1
+                    ? 'bg-[#dfa838] text-black shadow-sm'
+                    : 'text-white hover:text-[#dfa838]'
+                }`}
+              >
+                0.6x
+              </button>
+            )}
+            <button
+              type="button"
+              onClick={() => handleSetZoom(1.0)}
+              className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold transition ${
+                Math.abs(zoomLevel - 1.0) < 0.1
+                  ? 'bg-[#dfa838] text-black shadow-sm'
+                  : 'text-white hover:text-[#dfa838]'
+              }`}
+            >
+              1x
+            </button>
+            {zoomCapabilities.max >= 2.0 && (
+              <button
+                type="button"
+                onClick={() => handleSetZoom(2.0)}
+                className={`px-2 py-0.5 rounded-full text-[11px] font-bold transition ${
+                  Math.abs(zoomLevel - 2.0) < 0.1
+                    ? 'bg-[#dfa838] text-black shadow-sm'
+                    : 'text-white hover:text-[#dfa838]'
+                }`}
+              >
+                2x
+              </button>
+            )}
           </div>
         )}
 
