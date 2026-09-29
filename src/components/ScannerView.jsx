@@ -60,34 +60,10 @@ export default function ScannerView({
     }
 
     try {
-      // Find the primary 1x wide-angle back camera (avoid telephoto/zoom lens)
-      let chosenDeviceId = undefined;
-      try {
-        const devices = await navigator.mediaDevices.enumerateDevices();
-        const videoDevices = devices.filter((d) => d.kind === 'videoinput');
-        if (mode === 'environment') {
-          const backCameras = videoDevices.filter((d) => {
-            const l = (d.label || '').toLowerCase();
-            return l.includes('back') || l.includes('rear') || l.includes('environment');
-          });
-          const wideCam = backCameras.find((d) => {
-            const l = d.label.toLowerCase();
-            return !l.includes('telephoto') && !l.includes('zoom') && !l.includes('macro') && !l.includes('2x') && !l.includes('3x');
-          }) || backCameras[0];
-          if (wideCam && wideCam.deviceId) {
-            chosenDeviceId = { exact: wideCam.deviceId };
-          }
-        }
-      } catch (e) {
-        console.debug('Camera enumeration failed:', e);
-      }
-
-      const screenRatio = typeof window !== 'undefined' ? window.innerWidth / window.innerHeight : 9 / 16;
+      // Standard camera constraints: facingMode environment naturally opens the normal main 1x camera
       const constraints = {
         video: {
-          deviceId: chosenDeviceId,
-          facingMode: chosenDeviceId ? undefined : { ideal: mode },
-          aspectRatio: { ideal: screenRatio },
+          facingMode: { ideal: mode },
           width: { ideal: 1920 },
           height: { ideal: 1080 }
         },
@@ -97,7 +73,7 @@ export default function ScannerView({
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
 
-      // Enable continuous auto-focus & exposure, and explicitly FORCE zoom to 1.0 (no default digital zoom)
+      // Enable continuous auto-focus and keep standard 1.0x optical zoom
       const track = stream.getVideoTracks()[0];
       if (track && track.getCapabilities) {
         try {
@@ -109,17 +85,16 @@ export default function ScannerView({
           if (caps.exposureMode && caps.exposureMode.includes('continuous')) {
             adv.exposureMode = 'continuous';
           }
-          if (caps.zoom) {
-            const targetZoom = (caps.zoom.min <= 1.0 && caps.zoom.max >= 1.0) ? 1.0 : caps.zoom.min;
-            adv.zoom = targetZoom;
-            setZoomLevel(targetZoom);
+          if (caps.zoom && caps.zoom.min <= 1.0 && caps.zoom.max >= 1.0) {
+            adv.zoom = 1.0;
+            setZoomLevel(1.0);
             setZoomCapabilities(caps.zoom);
           }
           if (Object.keys(adv).length > 0) {
             await track.applyConstraints({ advanced: [adv] });
           }
         } catch (e) {
-          console.debug('Autofocus/zoom constraint skipped:', e);
+          console.debug('Autofocus constraint skipped:', e);
         }
       }
 
