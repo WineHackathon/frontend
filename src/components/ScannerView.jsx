@@ -58,17 +58,42 @@ export default function ScannerView({
     }
 
     try {
+      const isPortrait = typeof window !== 'undefined' && window.innerHeight > window.innerWidth;
       const constraints = {
         video: {
           facingMode: { ideal: mode },
-          width: { ideal: 1920 },
-          height: { ideal: 1080 }
+          width: { min: 720, ideal: isPortrait ? 1080 : 1920, max: 3840 },
+          height: { min: 720, ideal: isPortrait ? 1920 : 1080, max: 3840 },
+          advanced: [
+            { focusMode: 'continuous' },
+            { exposureMode: 'continuous' }
+          ]
         },
         audio: false
       };
 
       const stream = await navigator.mediaDevices.getUserMedia(constraints);
       streamRef.current = stream;
+
+      // Enable continuous auto-focus & exposure on mobile devices if supported
+      const track = stream.getVideoTracks()[0];
+      if (track && track.getCapabilities) {
+        try {
+          const caps = track.getCapabilities();
+          const adv = {};
+          if (caps.focusMode && caps.focusMode.includes('continuous')) {
+            adv.focusMode = 'continuous';
+          }
+          if (caps.exposureMode && caps.exposureMode.includes('continuous')) {
+            adv.exposureMode = 'continuous';
+          }
+          if (Object.keys(adv).length > 0) {
+            await track.applyConstraints({ advanced: [adv] });
+          }
+        } catch (e) {
+          console.debug('Autofocus constraint skipped:', e);
+        }
+      }
 
       if (videoRef.current) {
         videoRef.current.srcObject = stream;
@@ -126,7 +151,7 @@ export default function ScannerView({
 
     let targetWidth = video.videoWidth;
     let targetHeight = video.videoHeight;
-    const MAX_DIM = 1280;
+    const MAX_DIM = 1920;
 
     if (targetWidth > MAX_DIM || targetHeight > MAX_DIM) {
       if (targetWidth > targetHeight) {
@@ -142,6 +167,8 @@ export default function ScannerView({
     canvas.width = targetWidth;
     canvas.height = targetHeight;
     const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
     ctx.drawImage(video, 0, 0, targetWidth, targetHeight);
 
     return new Promise((resolve) => {
@@ -151,9 +178,9 @@ export default function ScannerView({
           return;
         }
         const file = new File([blob], `wine-snap-${Date.now()}.jpg`, { type: 'image/jpeg' });
-        const previewUrl = canvas.toDataURL('image/jpeg', 0.85);
+        const previewUrl = canvas.toDataURL('image/jpeg', 0.92);
         resolve({ file, previewUrl });
-      }, 'image/jpeg', 0.85);
+      }, 'image/jpeg', 0.90);
     });
   };
 
