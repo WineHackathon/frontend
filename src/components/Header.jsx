@@ -8,7 +8,7 @@ export default function Header({ user, remainingScans, onOpenAuth, onOpenProfile
   return (
     <header className="fixed top-0 inset-x-0 z-30 w-full px-3 sm:px-6 pt-3.5 pb-2 max-w-md mx-auto pointer-events-none">
       {/* Floating pill navigation matching vino-svoe.ru header */}
-      <div className="svoe-header-pill !bg-white/95 !backdrop-blur-md px-3 sm:px-4 h-13 sm:h-14 flex items-center justify-between shadow-svoe-header pointer-events-auto">
+      <div className="svoe-header-pill !bg-white/95 !backdrop-blur-md px-3 sm:px-4 h-14 flex items-center justify-between shadow-svoe-header pointer-events-auto">
         
         {/* Brand Logo & Name (vino-svoe.ru style) */}
         <div className="flex items-center space-x-2 sm:space-x-2.5 flex-shrink-0 min-w-0">
