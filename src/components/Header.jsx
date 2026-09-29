@@ -37,16 +37,13 @@ export default function Header({ user, remainingScans, onOpenAuth, onOpenProfile
           {/* Quick Wishlist Button */}
           <button
             onClick={() => {
-              if (isAuth) {
-                onOpenWishlist ? onOpenWishlist() : onOpenProfile('wishlist');
-              } else {
-                onOpenAuth({
-                  title: 'Вишлист покупок',
-                  subtitle: 'Войдите или зарегистрируйтесь, чтобы сохранять вина в вишлист и не забыть купить их.'
-                });
+              if (onOpenWishlist) {
+                onOpenWishlist();
+              } else if (onOpenProfile) {
+                onOpenProfile('wishlist');
               }
             }}
-            className="w-8 h-8 rounded-full bg-white border border-[#efdbc6] hover:border-[#8f3d42] text-[#8f3d42] hover:bg-[#fdf9ed] transition shadow-xs flex items-center justify-center flex-shrink-0"
+            className="w-8 h-8 rounded-full bg-white border border-[#efdbc6] hover:border-[#8f3d42] text-[#8f3d42] hover:bg-[#fdf9ed] transition shadow-xs flex items-center justify-center flex-shrink-0 active:scale-95"
             title="Вишлист (хочу купить)"
           >
             <Bookmark className="w-3.5 h-3.5" />

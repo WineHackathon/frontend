@@ -456,6 +456,29 @@ export const api = {
     return true;
   },
 
+  async removeFromCellarByWine(wine) {
+    if (!wine) return false;
+    try {
+      const items = await this.getCellar();
+      const match = items.find(i => 
+        (i.wine_id && i.wine_id === wine.id) || 
+        (i.wine?.slug && i.wine?.slug === wine.slug) ||
+        (i.wine_slug && i.wine_slug === wine.slug)
+      );
+      if (match) {
+        return await this.removeFromCellar(match.id);
+      }
+    } catch (e) {
+      console.warn('Error removing from cellar by wine:', e);
+    }
+    const local = localStorage.getItem('wine_local_cellar');
+    if (local) {
+      const cellar = JSON.parse(local).filter(item => !(item.wine?.slug === wine.slug || item.wine_id === wine.id));
+      localStorage.setItem('wine_local_cellar', JSON.stringify(cellar));
+    }
+    return true;
+  },
+
   // 9. История сканирований пользователя (/api/v1/users/scans)
   async getScanHistory() {
     try {

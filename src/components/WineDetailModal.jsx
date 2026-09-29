@@ -57,15 +57,27 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
 
   if (!wine) return null;
 
-  const handleAddToCellar = async (status) => {
-    if (!isAuth) {
-      onOpenAuth({
-        title: 'Винный погреб доступен авторизованным',
-        subtitle: 'Зарегистрируйтесь, чтобы сохранять вина в личный погреб или вишлист!'
-      });
-      return;
+  const handleToggleWishlist = async () => {
+    setIsSaving(true);
+    try {
+      if (cellarStatus === 'wishlist') {
+        await api.removeFromCellarByWine(wine);
+        setCellarStatus(null);
+        setAddedStatus(null);
+      } else {
+        await api.addToCellar(wine, 'wishlist');
+        setCellarStatus('wishlist');
+        setAddedStatus('wishlist');
+        setTimeout(() => setAddedStatus(null), 2500);
+      }
+    } catch (e) {
+      console.error('Error toggling wishlist:', e);
+    } finally {
+      setIsSaving(false);
     }
+  };
 
+  const handleAddToCellar = async (status = 'in_cellar') => {
     setIsSaving(true);
     try {
       await api.addToCellar(wine, status);
@@ -696,18 +708,16 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
           <div className="flex items-center gap-2 sm:gap-3 w-full sm:w-auto flex-1 sm:flex-initial justify-end min-w-0">
             {/* Wishlist Button */}
             <button
-              onClick={() => handleAddToCellar('wishlist')}
-              disabled={isSaving || cellarStatus === 'wishlist' || cellarStatus === 'in_cellar'}
-              className={`px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-full border text-xs font-semibold flex items-center justify-center space-x-1.5 transition shadow-sm shrink-0 sm:shrink ${
+              onClick={handleToggleWishlist}
+              disabled={isSaving}
+              className={`px-3.5 sm:px-5 py-2.5 sm:py-3 rounded-full border text-xs font-semibold flex items-center justify-center space-x-1.5 transition shadow-sm shrink-0 sm:shrink active:scale-95 ${
                 cellarStatus === 'wishlist'
-                  ? 'bg-[#fffbeb] border-[#fde68a] text-[#92400e] cursor-default'
-                  : cellarStatus === 'in_cellar'
-                  ? 'bg-gray-100 border-gray-200 text-gray-400 cursor-not-allowed opacity-60'
-                  : 'bg-white hover:bg-[#f8ecc9] border-[#efdbc6] text-[#8f3d42] active:scale-95'
+                  ? 'bg-[#fffbeb] border-[#fde68a] text-[#b45309] hover:bg-[#fef3c7]'
+                  : 'bg-white hover:bg-[#f8ecc9] border-[#efdbc6] text-[#8f3d42]'
               }`}
-              title={cellarStatus === 'in_cellar' ? 'Вино уже в вашем погребе' : 'Добавить в вишлист'}
+              title={cellarStatus === 'wishlist' ? 'Удалить из вишлиста' : 'Добавить в вишлист'}
             >
-              {addedStatus === 'wishlist' || cellarStatus === 'wishlist' ? (
+              {cellarStatus === 'wishlist' ? (
                 <>
                   <Check className="w-4 h-4 text-[#d97706]" />
                   <span>В вишлисте</span>
@@ -723,17 +733,17 @@ export default function WineDetailModal({ wine, onClose, onOpenAuth, onAskSommel
             {/* Primary Add to Cellar Button */}
             <button
               onClick={() => handleAddToCellar('in_cellar')}
-              disabled={isSaving || cellarStatus === 'in_cellar'}
-              className={`flex-1 sm:flex-initial font-semibold py-2.5 sm:py-3 px-4 sm:px-6 rounded-full text-xs sm:text-sm flex items-center justify-center space-x-2 transition shadow-sm min-w-0 sm:min-w-[170px] ${
+              disabled={isSaving}
+              className={`flex-1 sm:flex-initial font-semibold py-2.5 sm:py-3 px-4 sm:px-6 rounded-full text-xs sm:text-sm flex items-center justify-center space-x-2 transition shadow-sm min-w-0 sm:min-w-[170px] active:scale-95 ${
                 cellarStatus === 'in_cellar'
-                  ? 'bg-[#ecfdf5] border border-[#a7f3d0] text-[#065f46] cursor-default'
-                  : 'svoe-btn-primary bg-[#8f3d42] hover:bg-[#ab494f] text-white active:scale-95'
+                  ? 'bg-[#ecfdf5] border border-[#a7f3d0] text-[#065f46] hover:bg-[#d1fae5]'
+                  : 'svoe-btn-primary bg-[#8f3d42] hover:bg-[#ab494f] text-white'
               }`}
             >
-              {addedStatus === 'in_cellar' || cellarStatus === 'in_cellar' ? (
+              {cellarStatus === 'in_cellar' ? (
                 <>
                   <Check className="w-4 h-4 text-[#059669]" />
-                  <span>Уже в погребе</span>
+                  <span>В моем погребе</span>
                 </>
               ) : (
                 <>
