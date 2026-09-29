@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { X, Send, Sparkles, Bot, Lock, ArrowRight, RefreshCw } from 'lucide-react';
 import { SommelierWebSocketClient } from '../services/sommelierWs';
 import WineCard from './WineCard';
+import FormattedMessage from './FormattedMessage';
 import { getAuthToken } from '../services/api';
 
 export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWine, initialPrompt }) {
@@ -296,7 +297,7 @@ export default function SommelierChat({ isOpen, onClose, onOpenAuth, onSelectWin
                     <span>AI-Сомелье</span>
                   </div>
                 )}
-                <p className="whitespace-pre-wrap">{msg.content}</p>
+                <FormattedMessage content={msg.content} isUser={msg.role === 'user'} />
 
                 {/* Wine Cards (Candidates) returned by Sommelier */}
                 {msg.candidates && msg.candidates.length > 0 && (
