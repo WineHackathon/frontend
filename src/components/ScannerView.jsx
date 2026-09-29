@@ -163,6 +163,8 @@ export default function ScannerView({
       setScanResult(result);
       if (result.wine) {
         api.recordLocalScan(result.wine);
+      } else {
+        setScanError('Этикетка вина не обнаружена в кадре. Пожалуйста, наведите камеру на бутылку вина.');
       }
       onScanComplete(result.remaining_scans);
     } catch (err) {
