@@ -437,7 +437,7 @@ export default function ScannerView({
       )}
 
       {/* TOP UTILITY BAR (Under Floating Header) */}
-      <div className="relative pt-20 sm:pt-22 px-4 sm:px-6 z-20 flex items-center justify-between pointer-events-auto w-full max-w-lg mx-auto">
+      <div className="relative pt-22 sm:pt-24 px-4 sm:px-6 z-20 flex items-center justify-between pointer-events-auto w-full max-w-md mx-auto">
         {/* Status Badge */}
         {isCameraActive && !imagePreview ? (
           <div className="flex items-center space-x-1.5 px-3 py-1 rounded-full bg-black/50 backdrop-blur-md text-white text-[11px] font-medium border border-white/20 shadow-sm">

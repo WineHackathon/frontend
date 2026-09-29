@@ -6,31 +6,31 @@ export default function Header({ user, remainingScans, onOpenAuth, onOpenProfile
   const isAuth = !!user || !!getAuthToken();
 
   return (
-    <header className="fixed top-0 inset-x-0 z-30 w-full px-3 sm:px-6 pt-3 pb-2 max-w-md mx-auto pointer-events-none">
+    <header className="fixed top-0 inset-x-0 z-30 w-full px-3 sm:px-6 pt-3.5 pb-2 max-w-md mx-auto pointer-events-none">
       {/* Floating pill navigation matching vino-svoe.ru header */}
-      <div className="svoe-header-pill !bg-white/90 !backdrop-blur-md px-4 h-14 flex items-center justify-between shadow-svoe-header pointer-events-auto">
+      <div className="svoe-header-pill !bg-white/95 !backdrop-blur-md px-3 sm:px-4 h-13 sm:h-14 flex items-center justify-between shadow-svoe-header pointer-events-auto">
         
         {/* Brand Logo & Name (vino-svoe.ru style) */}
-        <div className="flex items-center space-x-2.5">
+        <div className="flex items-center space-x-2 sm:space-x-2.5 flex-shrink-0 min-w-0">
           <div className="w-8 h-8 rounded-full bg-[#8f3d42] flex items-center justify-center text-white shadow-sm flex-shrink-0">
             <Wine className="w-4 h-4 text-white" />
           </div>
-          <div>
-            <span className="font-serif font-semibold text-lg tracking-tight text-[#2c2a28] block leading-tight">
+          <div className="flex flex-col justify-center min-w-0">
+            <span className="font-serif font-semibold text-[15px] sm:text-lg tracking-tight text-[#2c2a28] block leading-tight whitespace-nowrap">
               Своё Вино
             </span>
-            <span className="text-[9px] uppercase tracking-wider text-[#857e79] font-medium block -mt-0.5">
+            <span className="text-[8px] sm:text-[9px] uppercase tracking-wider text-[#857e79] font-medium block leading-none mt-0.5 whitespace-nowrap">
               от РСХБ & Роскачества
             </span>
           </div>
         </div>
 
         {/* Right actions: Remaining scans badge + Wishlist + Profile/Auth button */}
-        <div className="flex items-center space-x-1.5 sm:space-x-2">
+        <div className="flex items-center space-x-1.5 sm:space-x-2 flex-shrink-0">
           {!isAuth && (
-            <div className="flex items-center space-x-1 px-2.5 py-1 rounded-full bg-[#fdf9ed] border border-[#efdbc6] text-[#8f3d42] text-xs font-semibold shadow-sm">
+            <div className="flex items-center space-x-1 px-2 py-1 rounded-full bg-[#fdf9ed] border border-[#efdbc6] text-[#8f3d42] font-semibold shadow-xs">
               <span className="w-1.5 h-1.5 rounded-full bg-[#8f3d42] animate-pulse"></span>
-              <span className="text-[11px]">{remainingScans}/5</span>
+              <span className="text-[11px] font-mono leading-none">{remainingScans}/5</span>
             </div>
           )}
 
@@ -46,16 +46,16 @@ export default function Header({ user, remainingScans, onOpenAuth, onOpenProfile
                 });
               }
             }}
-            className="p-2 rounded-full bg-white border border-[#efdbc6] hover:border-[#8f3d42] text-[#8f3d42] hover:bg-[#fdf9ed] transition shadow-sm flex items-center justify-center"
+            className="w-8 h-8 rounded-full bg-white border border-[#efdbc6] hover:border-[#8f3d42] text-[#8f3d42] hover:bg-[#fdf9ed] transition shadow-xs flex items-center justify-center flex-shrink-0"
             title="Вишлист (хочу купить)"
           >
-            <Bookmark className="w-4 h-4" />
+            <Bookmark className="w-3.5 h-3.5" />
           </button>
 
           {isAuth ? (
             <button
               onClick={() => onOpenProfile('cellar')}
-              className="flex items-center space-x-1.5 p-1 pr-2.5 rounded-full bg-white border border-[#efdbc6] hover:border-[#8f3d42] transition text-[#2c2a28] shadow-sm"
+              className="flex items-center space-x-1.5 p-1 pr-2.5 rounded-full bg-white border border-[#efdbc6] hover:border-[#8f3d42] transition text-[#2c2a28] shadow-xs flex-shrink-0"
               title="Личный кабинет и погреб"
             >
               <div className="w-6 h-6 rounded-full bg-[#8f3d42] text-white flex items-center justify-center text-[10px] font-bold">
@@ -68,7 +68,7 @@ export default function Header({ user, remainingScans, onOpenAuth, onOpenProfile
           ) : (
             <button
               onClick={onOpenAuth}
-              className="svoe-btn-primary text-xs px-3.5 py-1.5 flex items-center space-x-1.5 shadow-sm"
+              className="svoe-btn-primary text-xs px-3 py-1.5 flex items-center space-x-1 shadow-sm whitespace-nowrap flex-shrink-0"
             >
               <LogIn className="w-3.5 h-3.5" />
               <span>Войти</span>
