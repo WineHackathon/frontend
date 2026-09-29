@@ -104,10 +104,10 @@ export default function ProfileModal({ isOpen, onClose, user, onLogout, onSelect
         </div>
 
         {/* 4 Tabs Switcher: Погреб, Вишлист, Сканы, Вкус */}
-        <div className="flex items-center space-x-1.5 p-1 mx-3 sm:mx-4 mt-3 rounded-2xl bg-[#fdf9ed] border border-[#efdbc6] overflow-x-auto no-scrollbar flex-shrink-0">
+        <div className="flex items-center space-x-1 p-1 mx-3 sm:mx-4 mt-3 rounded-2xl bg-[#fdf9ed] border border-[#efdbc6] overflow-x-auto no-scrollbar flex-shrink-0">
           <button
             onClick={() => setActiveTab('cellar')}
-            className={`flex-1 min-w-[82px] sm:min-w-0 py-2 px-2.5 rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-1.5 whitespace-nowrap active:scale-95 ${
+            className={`flex-1 min-w-fit py-2 px-2 rounded-xl text-[11px] sm:text-xs font-semibold transition flex items-center justify-center space-x-1 whitespace-nowrap active:scale-95 ${
               activeTab === 'cellar' ? 'bg-[#8f3d42] text-white shadow-sm' : 'text-[#857e79] hover:text-[#2c2a28]'
             }`}
           >
@@ -116,7 +116,7 @@ export default function ProfileModal({ isOpen, onClose, user, onLogout, onSelect
           </button>
           <button
             onClick={() => setActiveTab('wishlist')}
-            className={`flex-1 min-w-[82px] sm:min-w-0 py-2 px-2.5 rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-1.5 whitespace-nowrap active:scale-95 ${
+            className={`flex-1 min-w-fit py-2 px-2 rounded-xl text-[11px] sm:text-xs font-semibold transition flex items-center justify-center space-x-1 whitespace-nowrap active:scale-95 ${
               activeTab === 'wishlist' ? 'bg-[#8f3d42] text-white shadow-sm' : 'text-[#857e79] hover:text-[#2c2a28]'
             }`}
           >
@@ -125,7 +125,7 @@ export default function ProfileModal({ isOpen, onClose, user, onLogout, onSelect
           </button>
           <button
             onClick={() => setActiveTab('scans')}
-            className={`flex-1 min-w-[82px] sm:min-w-0 py-2 px-2.5 rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-1.5 whitespace-nowrap active:scale-95 ${
+            className={`flex-1 min-w-fit py-2 px-2 rounded-xl text-[11px] sm:text-xs font-semibold transition flex items-center justify-center space-x-1 whitespace-nowrap active:scale-95 ${
               activeTab === 'scans' ? 'bg-[#8f3d42] text-white shadow-sm' : 'text-[#857e79] hover:text-[#2c2a28]'
             }`}
           >
@@ -134,7 +134,7 @@ export default function ProfileModal({ isOpen, onClose, user, onLogout, onSelect
           </button>
           <button
             onClick={() => setActiveTab('taste')}
-            className={`flex-1 min-w-[72px] sm:min-w-0 py-2 px-2.5 rounded-xl text-xs font-semibold transition flex items-center justify-center space-x-1.5 whitespace-nowrap active:scale-95 ${
+            className={`flex-1 min-w-fit py-2 px-2 rounded-xl text-[11px] sm:text-xs font-semibold transition flex items-center justify-center space-x-1 whitespace-nowrap active:scale-95 ${
               activeTab === 'taste' ? 'bg-[#8f3d42] text-white shadow-sm' : 'text-[#857e79] hover:text-[#2c2a28]'
             }`}
           >
