@@ -229,21 +229,20 @@ export default function ScannerView({
         api.recordLocalScan(result.wine);
       } else {
         setScanError('Этикетка вина не обнаружена в кадре. Пожалуйста, наведите камеру на бутылку вина.');
-        // Автоматически возвращаем живой видоискатель через 3 сек, чтобы экран не "залипал"
-        setTimeout(() => {
-          setImagePreview((current) => {
-            if (current && !result.wine) {
-              setCapturedImage(null);
-              return null;
-            }
-            return current;
-          });
-        }, 3000);
+        // Мгновенно возвращаем живую камеру, чтобы экран не застывал на старом кадре
+        if (streamRef.current) {
+          setImagePreview(null);
+          setCapturedImage(null);
+        }
       }
       onScanComplete(result.remaining_scans);
     } catch (err) {
       console.error('Scan error:', err);
       setScanError('Не удалось распознать этикетку. Попробуйте сфокусироваться четче или при лучшем освещении.');
+      if (streamRef.current) {
+        setImagePreview(null);
+        setCapturedImage(null);
+      }
     } finally {
       setIsScanning(false);
     }
@@ -348,7 +347,9 @@ export default function ScannerView({
         <img
           src={imagePreview}
           alt="Captured wine"
-          className="absolute inset-0 w-full h-full object-cover z-0 animate-fadeIn"
+          onClick={handleRetake}
+          className="absolute inset-0 w-full h-full object-cover z-0 animate-fadeIn cursor-pointer"
+          title="Нажмите в любое место, чтобы вернуться к камере"
         />
       )}
 
